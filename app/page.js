@@ -42,16 +42,17 @@ export default function CompanyProfile() {
           </div>
         </div>
 
-        <div className="order-1 md:order-2 bg-gray-100 aspect-square rounded-[32px] md:rounded-[40px] overflow-hidden shadow-2xl relative group">
+        {/* LOGO DI SINI SUDAH DIUBAH KE logo(1).png */}
+        <div className="order-1 md:order-2 bg-gray-50 aspect-square rounded-[32px] md:rounded-[40px] overflow-hidden shadow-xl border border-gray-100 relative group flex items-center justify-center p-8">
           <img 
             src="/logo(1).png" 
             alt="Logo Bihin Nisan" 
-            className="w-full h-full object-cover transition duration-500 group-hover:scale-110" 
+            className="max-w-full max-h-full object-contain transition duration-500 group-hover:scale-105" 
           />
         </div>
       </section>
 
-      {/* 4. KATALOG (GRID KATEGORI) - LINK SUDAH DIPERBAIKI */}
+      {/* 4. KATALOG (GRID KATEGORI) */}
       <section id="produk" className="py-20 bg-gray-900 text-white px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -60,7 +61,6 @@ export default function CompanyProfile() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
-            {/* LINK KE KRAMIK */}
             <Link href="/produk/kramik" className="group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500">
               <div className="text-5xl mb-6 grayscale group-hover:grayscale-0 transition">🪦</div>
               <h4 className="text-xl font-bold mb-3 group-hover:text-black">Nisan Kramik</h4>
@@ -68,7 +68,6 @@ export default function CompanyProfile() {
               <span className="text-blue-400 group-hover:text-blue-600 font-black text-sm">LIHAT PRODUK →</span>
             </Link>
 
-            {/* LINK KE GRANIT */}
             <Link href="/produk/granit" className="group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500">
               <div className="text-5xl mb-6 grayscale group-hover:grayscale-0 transition">⬛</div>
               <h4 className="text-xl font-bold mb-3 group-hover:text-black">Prasasti Granit</h4>
@@ -76,7 +75,6 @@ export default function CompanyProfile() {
               <span className="text-blue-400 group-hover:text-blue-600 font-black text-sm">LIHAT PRODUK →</span>
             </Link>
 
-            {/* LINK KE COSTUM */}
             <Link href="/produk/costum" className="group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500">
               <div className="text-5xl mb-6 grayscale group-hover:grayscale-0 transition">⚒️</div>
               <h4 className="text-xl font-bold mb-3 group-hover:text-black">Costum Desain</h4>
