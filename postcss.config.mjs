@@ -2,7 +2,7 @@
 const config = {
   plugins: {
     tailwindcss: {},
-    autoprefixer: {}, // Tambahkan ini agar desain kamu rapi di semua browser HP
+    autoprefixer: {},
   },
 };
 
