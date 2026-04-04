@@ -76,7 +76,7 @@ export default function CompanyProfile() {
               <span className="text-blue-400 group-hover:text-blue-600 font-black text-sm">LIHAT PRODUK →</span>
             </Link>
 
-            <Link href="/produk?filter=custom" className="group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500">
+            <Link href="/produk?filter=Costum Desain" className="group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500">
               <div className="text-5xl mb-6 grayscale group-hover:grayscale-0 transition">⚒️</div>
               <h4 className="text-xl font-bold mb-3 group-hover:text-black">Custom Desain</h4>
               <p className="text-gray-400 text-sm mb-6 group-hover:text-gray-600 italic">Sesuai keinginan Anda.</p>
