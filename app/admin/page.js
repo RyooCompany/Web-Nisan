@@ -8,13 +8,14 @@ export default function AdminPage() {
   const [produkList, setProdukList] = useState([]);
   const [nama, setNama] = useState("");
   const [harga, setHarga] = useState("");
-  const [kategori, setKategori] = useState("Kramik");
+  // Pastikan value default sesuai dengan kodingan filter kamu (misal huruf kecil/besar)
+  const [kategori, setKategori] = useState("custom"); 
   const [fileFoto, setFileFoto] = useState(null);
   const [previewFoto, setPreviewFoto] = useState("");
   const [komentarList, setKomentarList] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // STATE BARU: Untuk Lacak Pesanan
+  // STATE: Untuk Lacak Pesanan
   const [pesananList, setPesananList] = useState([]);
   const [namaPembeli, setNamaPembeli] = useState("");
   const [waPembeli, setWaPembeli] = useState("");
@@ -22,17 +23,24 @@ export default function AdminPage() {
 
   const router = useRouter();
 
-  // 1. Ambil data ulasan & pesanan
+  // 1. Ambil data dari Supabase & LocalStorage (untuk pesanan)
   async function ambilData() {
+    // Ambil Testimoni dari Supabase
     const { data: testies } = await supabase
       .from('testimonis')
       .select('*')
       .eq('is_approved', false)
       .order('created_at', { ascending: false });
-    
     if (testies) setKomentarList(testies);
 
-    // Ambil data pesanan dari localStorage (nanti bisa pindah ke Supabase)
+    // AMBIL PRODUK DARI SUPABASE (Bukan localStorage lagi)
+    const { data: produkData, error: produkError } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (produkData) setProdukList(produkData);
+
+    // Ambil data pesanan dari localStorage (nanti bisa dipindah ke Supabase juga kalau mau)
     const savedPesanan = localStorage.getItem("db_pesanan");
     if (savedPesanan) setPesananList(JSON.parse(savedPesanan));
   }
@@ -42,8 +50,6 @@ export default function AdminPage() {
     if (sudahLogin !== "true") {
       window.location.replace("/login");
     } else {
-      const dataProduk = localStorage.getItem("db_nisan");
-      if (dataProduk) setProdukList(JSON.parse(dataProduk));
       ambilData(); 
     }
   }, []);
@@ -56,7 +62,7 @@ export default function AdminPage() {
       nama_pembeli: namaPembeli,
       wa_pembeli: waPembeli,
       produk: produkDipesan,
-      status: "Proses", // Status awal
+      status: "Proses", 
       update_tgl: new Date().toLocaleString('id-ID')
     };
     const update = [baru, ...pesananList];
@@ -98,7 +104,7 @@ export default function AdminPage() {
     }
   };
 
-  // --- FUNGSI PRODUK ---
+  // --- FUNGSI PRODUK (SUDAH FULL SUPABASE) ---
   const uploadKeBucket = async (file) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
@@ -112,14 +118,35 @@ export default function AdminPage() {
     e.preventDefault();
     if (!fileFoto) return alert("Pilih foto!");
     setLoading(true);
+    
     try {
+      // 1. Upload Foto dulu ke Storage Supabase
       const urlFotoCloud = await uploadKeBucket(fileFoto);
-      const baru = { id: Date.now(), nama, harga: harga.replace(/\D/g, ""), foto: urlFotoCloud, kategori };
-      const update = [...produkList, baru];
-      setProdukList(update);
-      localStorage.setItem("db_nisan", JSON.stringify(update));
+      
+      // 2. Siapkan data produk untuk database
+      const produkBaru = { 
+        nama: nama, 
+        harga: Number(harga.replace(/\D/g, "")), // Pastikan format angka 
+        foto: urlFotoCloud, 
+        kategori: kategori 
+      };
+
+      // 3. Masukkan ke tabel 'products' di Supabase
+      const { data, error } = await supabase
+        .from('products')
+        .insert([produkBaru])
+        .select(); // Minta Supabase kembalikan data yang berhasil masuk
+
+      if (error) throw error;
+
+      // 4. Update tampilan tabel langsung tanpa perlu refresh
+      if (data && data.length > 0) {
+        setProdukList([data[0], ...produkList]);
+      }
+      
+      // 5. Bersihkan Form
       setNama(""); setHarga(""); setPreviewFoto(""); setFileFoto(null);
-      alert("Produk Berhasil Disimpan!");
+      alert("Mantap! Produk Berhasil Masuk ke Database!");
     } catch (err) {
       alert("Gagal: " + err.message);
     } finally {
@@ -134,6 +161,18 @@ export default function AdminPage() {
       const reader = new FileReader();
       reader.onloadend = () => setPreviewFoto(reader.result);
       reader.readAsDataURL(file);
+    }
+  };
+
+  // Fungsi Hapus Produk di Supabase
+  const hapusProduk = async (id) => {
+    if (confirm("Yakin ingin menghapus produk ini dari database?")) {
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (!error) {
+        setProdukList(produkList.filter(p => p.id !== id));
+      } else {
+        alert("Gagal menghapus produk!");
+      }
     }
   };
 
@@ -155,18 +194,18 @@ export default function AdminPage() {
             <h2 className="text-xl font-bold mb-6 text-blue-600">📦 Tambah Produk Baru</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <input type="text" placeholder="Nama Produk" className="w-full p-4 border rounded-2xl bg-gray-50" value={nama} onChange={(e) => setNama(e.target.value)} required />
-              <input type="text" placeholder="Harga (Angka saja)" className="w-full p-4 border rounded-2xl bg-gray-50" value={harga} onChange={(e) => setHarga(e.target.value)} required />
+              <input type="text" placeholder="Harga (Angka saja, cth: 800000)" className="w-full p-4 border rounded-2xl bg-gray-50" value={harga} onChange={(e) => setHarga(e.target.value)} required />
               <select value={kategori} onChange={(e) => setKategori(e.target.value)} className="w-full p-4 border rounded-2xl bg-white font-bold">
-                <option value="Kramik">Nisan Kramik</option>
-                <option value="Granit">Prasasti Granit</option>
-                <option value="Costum">Costum Desain</option>
+                <option value="kramik">Nisan Kramik</option>
+                <option value="granit">Prasasti Granit</option>
+                <option value="custom">Costum Desain</option>
               </select>
               <div className="bg-blue-50 p-4 rounded-2xl border-2 border-dashed border-blue-200">
                 <input type="file" accept="image/*" onChange={handleFileChange} className="text-xs w-full" required />
                 {previewFoto && <img src={previewFoto} alt="Preview" className="mt-4 h-32 w-full object-cover rounded-xl" />}
               </div>
               <button disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black disabled:bg-gray-400">
-                {loading ? "UPLOADING..." : "SIMPAN PRODUK"}
+                {loading ? "MENYIMPAN KE DATABASE..." : "SIMPAN PRODUK"}
               </button>
             </form>
           </div>
@@ -225,7 +264,7 @@ export default function AdminPage() {
                       </select>
                     </td>
                     <td className="p-5">
-                      <button onClick={() => hapusPesanan(p.id)} className="text-red-400 hover:text-red-600 text-sm">Hapus</button>
+                      <button onClick={() => hapusPesanan(p.id)} className="text-red-400 hover:text-red-600 text-sm font-bold">Hapus</button>
                     </td>
                   </tr>
                 ))}
@@ -237,54 +276,50 @@ export default function AdminPage() {
 
         {/* BAGIAN PRODUK & TESTIMONI TETAP DI BAWAH */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-           {/* (Kode Daftar Produk & Komentar kamu sebelumnya) */}
+           {/* DAFTAR PRODUK DARI SUPABASE */}
            <div className="bg-white rounded-3xl shadow-md border overflow-hidden">
-              <div className="p-4 bg-slate-800 text-white font-bold">📦 Katalog Produk</div>
+              <div className="p-4 bg-slate-800 text-white font-bold">📦 Katalog Produk Database</div>
               <div className="divide-y max-h-[400px] overflow-y-auto">
-                {produkList.map(p => (
-                  <div key={p.id} className="p-4 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <img src={p.foto} className="w-10 h-10 object-cover rounded-lg" alt="" />
-                      <p className="text-sm font-bold">{p.nama}</p>
+                {produkList.length > 0 ? (
+                  produkList.map(p => (
+                    <div key={p.id} className="p-4 flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <img src={p.foto} className="w-12 h-12 object-cover rounded-lg" alt="" />
+                        <div>
+                          <p className="text-sm font-bold">{p.nama}</p>
+                          <p className="text-[10px] text-gray-500 uppercase">{p.kategori}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => hapusProduk(p.id)} className="bg-red-50 hover:bg-red-100 text-red-500 px-3 py-1 rounded-lg text-xs font-bold transition">
+                        Hapus
+                      </button>
                     </div>
-                    <button onClick={() => {
-                      const f = produkList.filter(i => i.id !== p.id);
-                      setProdukList(f); localStorage.setItem("db_nisan", JSON.stringify(f));
-                    }} className="text-red-500 text-xs">Hapus</button>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-center text-gray-400 italic p-6">Belum ada produk di database.</p>
+                )}
               </div>
            </div>
 
+           {/* DAFTAR TESTIMONI */}
            <div className="bg-white rounded-3xl shadow-md border overflow-hidden">
               <div className="p-4 bg-yellow-500 text-white font-bold">💬 Testimoni Pending</div>
              <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
-  {komentarList.length > 0 ? (
-    komentarList.map((k, index) => (
-      // Gunakan kombinasi nama dan index agar key PASTI unik dan tidak merah lagi
-      <div key={`${k.nama}-${index}`} className="border-b pb-2">
-        <p className="font-bold text-sm uppercase">{k.nama}</p>
-        <p className="text-xs italic">"{k.pesan}"</p>
-        <div className="flex gap-2 mt-2">
-          <button 
-            onClick={() => terimaKomentar(k.nama)} 
-            className="text-[10px] bg-green-500 text-white px-2 py-1 rounded"
-          >
-            Terima
-          </button>
-          <button 
-            onClick={() => tolakKomentar(k.nama)} 
-            className="text-[10px] bg-red-500 text-white px-2 py-1 rounded"
-          >
-            Tolak
-          </button>
-        </div>
-      </div>
-    ))
-  ) : (
-    <p className="text-center text-gray-400 text-xs py-4">Belum ada testimoni.</p>
-  )}
-</div>
+                {komentarList.length > 0 ? (
+                  komentarList.map((k, index) => (
+                    <div key={`${k.nama}-${index}`} className="border-b pb-2">
+                      <p className="font-bold text-sm uppercase">{k.nama}</p>
+                      <p className="text-xs italic text-gray-600">"{k.pesan}"</p>
+                      <div className="flex gap-2 mt-3">
+                        <button onClick={() => terimaKomentar(k.nama)} className="text-[10px] bg-green-500 hover:bg-green-600 font-bold text-white px-3 py-1 rounded">Terima</button>
+                        <button onClick={() => tolakKomentar(k.nama)} className="text-[10px] bg-red-500 hover:bg-red-600 font-bold text-white px-3 py-1 rounded">Tolak</button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-gray-400 text-xs py-4">Belum ada testimoni.</p>
+                )}
+              </div>
            </div>
         </div>
 
