@@ -11,7 +11,7 @@ export default function LoginPage() {
     e.preventDefault();
 
     // Akun Admin Statis
-    const adminEmail = "user@batu.com";
+    const adminEmail = "adminnisan@gmail.com";
     const adminPass = "123";
 
     if (email === adminEmail && password === adminPass) {

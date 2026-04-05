@@ -92,7 +92,6 @@ export default function CompanyProfile() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 text-gray-400 text-xs">
           <p>&copy; 2026 BihinNisan.</p>
           <div className="flex gap-4 font-bold">
-            <Link href="/login" className="hover:text-blue-600 transition">Panel Admin</Link>
           </div>
         </div>
       </footer>
