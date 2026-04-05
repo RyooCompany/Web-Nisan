@@ -26,7 +26,7 @@ export default function CompanyProfile() {
         </div>
       </section>
 
-      {/* PROFIL PERUSAHAAN */}
+      {/* PROFIL PERUSAHAAN - BAGIAN YANG DIPERBAIKI */}
       <section id="profil" className="py-16 px-6 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
         <div className="order-2 md:order-1 text-center md:text-left">
           <div className="bg-blue-600 w-20 h-1 mb-6 mx-auto md:mx-0"></div>
@@ -44,11 +44,12 @@ export default function CompanyProfile() {
           </div>
         </div>
 
-        <div className="order-1 md:order-2 bg-gray-50 aspect-square rounded-[32px] md:rounded-[40px] overflow-hidden shadow-xl border border-gray-100 relative group flex items-center justify-center p-8">
+        {/* LOGO SEKARANG FULL TANPA PADDING */}
+        <div className="order-1 md:order-2 bg-gray-50 aspect-square rounded-[32px] md:rounded-[40px] overflow-hidden shadow-xl border border-gray-100 relative group p-0">
           <img 
             src="/logo(1).png" 
             alt="Logo Bihin Nisan" 
-            className="max-w-full max-h-full object-contain transition duration-500 group-hover:scale-105" 
+            className="w-full h-full object-cover transition duration-500 group-hover:scale-105" 
           />
         </div>
       </section>
