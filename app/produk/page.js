@@ -84,12 +84,13 @@ function EtalaseContent() {
                   </div>
                   <div className="p-5 flex-grow">
                     {/* MENAMPILKAN KATEGORI */}
-                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 opacity-70">
-                      {item.kategori}
-                    </p>
-                    <h2 className="text-sm md:text-base font-bold text-gray-900 mb-1 leading-tight">
-                      {item.nama}
-                    </h2>
+                   {/* Tempat menampilkan Kategori */}
+        <p className="text-[10px] uppercase tracking-widest text-blue-500 font-bold mb-1">
+  {p.kategori || "Tanpa Kategori"}
+</p>
+
+{/* Nama Produk yang sudah ada */}
+<h3 className="font-bold text-gray-800">{p.nama}</h3>
                     <p className="text-blue-600 font-black text-sm">
                       Rp {Number(item.harga).toLocaleString('id-ID')}
                     </p>

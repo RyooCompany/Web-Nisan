@@ -1,100 +1,167 @@
 "use client";
-import Link from 'next/link';
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 export const dynamic = 'force-dynamic';
 
-export default function CompanyProfile() {
-  const noWA = "6281214562122"; 
+const SUPABASE_URL = "https://zjqtknrztqrevjnttkgh.supabase.co";
+const SUPABASE_KEY = "sb_publishable_nk17EXYR5F7VSzUPwsZj3w_ES38Xevy"; 
+
+function EtalaseContent() {
+  const searchParams = useSearchParams();
+  const filter = searchParams.get("filter"); 
+  const [produkList, setProdukList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+
+  useEffect(() => {
+    async function ambilData() {
+      try {
+        setLoading(true);
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*`, {
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+          }
+        });
+        const data = await res.json();
+        
+        if (filter) {
+          setProdukList(data.filter(p => p.kategori?.toLowerCase() === filter.toLowerCase()));
+        } else {
+          setProdukList(data);
+        }
+      } catch (err) {
+        console.error("Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    ambilData();
+  }, [filter]);
+
+  const closeModals = () => {
+    setSelectedProduct(null);
+    setShowPaymentOptions(false);
+  };
 
   return (
-    <div className="min-h-screen bg-white text-gray-800 font-sans scroll-smooth">
-      
-      {/* HERO SECTION */}
-      <section className="py-16 md:py-24 px-6 text-center bg-gradient-to-b from-blue-50/50 to-white">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
-            Kerajinan Nisan <span className="text-blue-600 underline decoration-blue-200">Keramik & Granit</span> Berkualitas.
-          </h2>
-          <p className="text-lg md:text-xl text-gray-600 mb-10 leading-relaxed">
-            Melayani pemesanan kustom dengan teknik ukir profesional. Pengiriman aman dan amanah dari Jatihurip, Sumedang.
-          </p>
-          <div className="flex justify-center">
-            <a href={`https://wa.me/${noWA}`} className="w-full md:w-auto bg-white text-gray-900 border-2 border-gray-900 px-8 md:px-12 py-4 rounded-2xl font-black hover:bg-gray-900 hover:text-white transition-all shadow-lg active:scale-95 text-center">
-              Konsultasi Gratis
-            </a>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans text-gray-800">
+      <div className="max-w-6xl mx-auto">
+        <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <Link href="/" className="text-blue-600 font-medium mb-2 block hover:underline text-sm">
+              ← Kembali ke Beranda
+            </Link>
+            <h1 className="text-3xl md:text-4xl font-black text-gray-900 uppercase tracking-tighter">
+              Katalog <span className="text-blue-600">{filter || "Nisan"}</span>
+            </h1>
           </div>
-        </div>
-      </section>
+        </header>
 
-      {/* PROFIL PERUSAHAAN */}
-      <section id="profil" className="py-16 px-6 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
-        <div className="order-2 md:order-1 text-center md:text-left">
-          <div className="bg-blue-600 w-20 h-1 mb-6 mx-auto md:mx-0"></div>
-          <h3 className="text-3xl md:text-4xl font-black mb-6 text-gray-900 uppercase">Mengapa Memilih Kami?</h3>
-          <p className="text-gray-600 leading-relaxed text-base md:text-lg mb-8">
-            Kami mengombinasikan keahlian seni tradisional dengan material berkualitas tinggi. Detail pekerjaan adalah identitas kami.
-          </p>
-          <div className="space-y-3 font-bold text-gray-700 text-sm md:text-base">
-            <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-xl">
-              <span className="text-blue-600">✔</span> Bahan Keramik & Granit Pilihan
+        {loading ? (
+          <div className="text-center py-20 font-bold text-blue-600 animate-pulse uppercase tracking-widest">
+            Memuat Produk...
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {produkList.length > 0 ? (
+              produkList.map((item) => (
+                <div 
+                  key={item.id} 
+                  className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-xl transition-all group flex flex-col"
+                  onClick={() => setSelectedProduct(item)}
+                >
+                  <div className="aspect-[4/5] w-full bg-gray-100 overflow-hidden relative">
+                    <img 
+                      src={item.foto} 
+                      alt={item.nama} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition duration-700" 
+                    />
+                  </div>
+                  <div className="p-5 flex-grow">
+                    {/* MENAMPILKAN KATEGORI */}
+                    <p className="text-[10px] uppercase tracking-widest text-blue-500 font-bold mb-1">
+                      {item.kategori}
+                    </p>
+                    {/* MENAMPILKAN NAMA */}
+                    <h3 className="font-bold text-gray-800 mb-1">{item.nama}</h3>
+                    {/* TETAP PAKAI item.harga */}
+                    <p className="text-blue-600 font-black text-sm">
+                      Rp {item.harga ? Number(item.harga).toLocaleString('id-ID') : "0"}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-20 bg-white rounded-[2rem] border-2 border-dashed border-gray-200">
+                <p className="text-gray-400 font-bold italic">Produk belum tersedia.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* MODAL DETAIL */}
+      {selectedProduct && (
+        <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-md">
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden relative shadow-2xl">
+            <button 
+              onClick={closeModals} 
+              className="absolute top-4 right-4 bg-white/90 backdrop-blur w-10 h-10 rounded-full flex items-center justify-center font-bold shadow-lg z-10 hover:bg-red-500 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+            <div className="max-h-[90vh] overflow-y-auto">
+              <img src={selectedProduct.foto} className="w-full aspect-square object-cover" />
+              <div className="p-8">
+                {!showPaymentOptions ? (
+                  <>
+                    <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2">{selectedProduct.kategori}</p>
+                    <h2 className="text-2xl font-black text-gray-900 leading-tight">{selectedProduct.nama}</h2>
+                    <p className="text-3xl font-black text-blue-600 my-5">
+                      Rp {selectedProduct.harga ? Number(selectedProduct.harga).toLocaleString('id-ID') : "0"}
+                    </p>
+                    <button 
+                      onClick={() => setShowPaymentOptions(true)} 
+                      className="w-full bg-gray-900 text-white py-5 rounded-2xl font-black hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-blue-200"
+                    >
+                      BELI SEKARANG
+                    </button>
+                  </>
+                ) : (
+                  <div className="text-center">
+                    <button onClick={() => setShowPaymentOptions(false)} className="text-blue-600 font-bold mb-6 flex items-center justify-center gap-2 mx-auto hover:gap-4 transition-all">
+                      ← Kembali ke Detail
+                    </button>
+                    <a 
+                      href={`https://wa.me/6281214562122?text=Halo Bihin Nisan, saya ingin pesan produk ini:%0A%0A- Nama: ${selectedProduct.nama}%0A- Kategori: ${selectedProduct.kategori}%0A- Harga: Rp ${Number(selectedProduct.harga).toLocaleString('id-ID')}`} 
+                      target="_blank" 
+                      className="block w-full bg-green-500 text-white py-5 rounded-2xl font-bold mb-8 hover:bg-green-600 shadow-lg shadow-green-100 transition-all"
+                    >
+                      Pesan via WhatsApp
+                    </a>
+                    <div className="p-6 bg-blue-50 rounded-[2rem] border border-blue-100">
+                       <p className="text-[10px] font-black text-blue-600 mb-4 tracking-widest">SCAN QRIS UNTUK PEMBAYARAN</p>
+                       <img src="https://zjqtknrztqrevjnttkgh.supabase.co/storage/v1/object/public/foto-produk/WhatsApp%20Image%202026-03-29%20at%2020.50.11.jpeg" className="w-full rounded-2xl shadow-sm" alt="QRIS Payment" />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-xl">
-              <span className="text-blue-600">✔</span> Ukir Profesional (Manual & CNC)
-            </div>
           </div>
         </div>
-
-        <div className="order-1 md:order-2 bg-gray-50 aspect-square rounded-[32px] md:rounded-[40px] overflow-hidden shadow-xl border border-gray-100 relative group flex items-center justify-center p-8">
-          <img 
-            src="/logo(1).png" 
-            alt="Logo Bihin Nisan" 
-            className="max-w-full max-h-full object-contain transition duration-500 group-hover:scale-105" 
-          />
-        </div>
-      </section>
-
-      {/* KATALOG (GRID KATEGORI) */}
-      <section id="produk" className="py-20 bg-gray-900 text-white px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h3 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-tighter">Layanan & Produk</h3>
-            <p className="text-gray-400 text-sm md:text-base">Pilih kategori untuk melihat koleksi kami</p>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
-            <Link href="/produk?filter=kramik" className="group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500">
-              <div className="text-5xl mb-6 grayscale group-hover:grayscale-0 transition">🪦</div>
-              <h4 className="text-xl font-bold mb-3 group-hover:text-black">Nisan Keramik</h4>
-              <p className="text-gray-400 text-sm mb-6 group-hover:text-gray-600 italic">Bahan Keramik Mulus & Awet.</p>
-              <span className="text-blue-400 group-hover:text-blue-600 font-black text-sm">LIHAT PRODUK →</span>
-            </Link>
-
-            <Link href="/produk?filter=granit" className="group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500">
-              <div className="text-5xl mb-6 grayscale group-hover:grayscale-0 transition">⬛</div>
-              <h4 className="text-xl font-bold mb-3 group-hover:text-black">Prasasti Granit</h4>
-              <p className="text-gray-400 text-sm mb-6 group-hover:text-gray-600 italic">Kesan mewah dan kokoh.</p>
-              <span className="text-blue-400 group-hover:text-blue-600 font-black text-sm">LIHAT PRODUK →</span>
-            </Link>
-
-            <Link href="/produk?filter=Costum Desain" className="group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500">
-              <div className="text-5xl mb-6 grayscale group-hover:grayscale-0 transition">⚒️</div>
-              <h4 className="text-xl font-bold mb-3 group-hover:text-black">Custom Desain</h4>
-              <p className="text-gray-400 text-sm mb-6 group-hover:text-gray-600 italic">Sesuai keinginan Anda.</p>
-              <span className="text-blue-400 group-hover:text-blue-600 font-black text-sm">LIHAT PRODUK →</span>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="py-10 border-t bg-gray-50 px-6 text-center">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 text-gray-400 text-xs">
-          <p>&copy; 2026 BihinNisan.</p>
-          <div className="flex gap-4 font-bold">
-            <Link href="/login" className="hover:text-blue-600 transition">Panel Admin</Link>
-          </div>
-        </div>
-      </footer>
+      )}
     </div>
+  );
+}
+
+export default function EtalasePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-bold text-blue-600 animate-pulse">MEMUAT...</div>}>
+      <EtalaseContent />
+    </Suspense>
   );
 }
