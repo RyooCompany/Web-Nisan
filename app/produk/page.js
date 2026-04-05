@@ -82,17 +82,15 @@ function EtalaseContent() {
                     />
                   </div>
                   <div className="p-5 flex-grow">
-                    {/* PERBAIKAN: Menampilkan Kategori menggunakan variabel item */}
                     <p className="text-[10px] uppercase tracking-widest text-blue-500 font-bold mb-1">
                       {item.kategori || "Tanpa Kategori"}
                     </p>
 
-                    {/* PERBAIKAN: Menampilkan Nama menggunakan variabel item */}
                     <h3 className="font-bold text-gray-800 mb-1">{item.nama}</h3>
                     
-                    {/* PERBAIKAN: Menggunakan .price sesuai database agar tidak NaN */}
+                    {/* PERBAIKAN 1: Mengubah item.price menjadi item.harga */}
                     <p className="text-blue-600 font-black text-sm">
-                      Rp {item.price ? Number(item.price).toLocaleString('id-ID') : "0"}
+                      Rp {item.harga ? Number(item.harga).toLocaleString('id-ID') : "0"}
                     </p>
                   </div>
                 </div>
@@ -109,7 +107,8 @@ function EtalaseContent() {
       {/* MODAL DETAIL */}
       {selectedProduct && (
         <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-md">
-          <div className="bg-white w-full max-lg rounded-[2.5rem] overflow-hidden relative shadow-2xl">
+          {/* PERBAIKAN 2: Mengubah max-lg menjadi max-w-md agar pop-up tidak memenuhi layar */}
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden relative shadow-2xl">
             <button 
               onClick={closeModals} 
               className="absolute top-4 right-4 bg-white/90 backdrop-blur w-10 h-10 rounded-full flex items-center justify-center font-bold shadow-lg z-10 hover:bg-red-500 hover:text-white transition-colors"
@@ -123,9 +122,10 @@ function EtalaseContent() {
                   <>
                     <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2">{selectedProduct.kategori}</p>
                     <h2 className="text-2xl font-black text-gray-900 leading-tight">{selectedProduct.nama}</h2>
-                    {/* PERBAIKAN: Menggunakan .price di modal */}
+                    
+                    {/* PERBAIKAN 3: Mengubah selectedProduct.price menjadi selectedProduct.harga */}
                     <p className="text-3xl font-black text-blue-600 my-5">
-                      Rp {selectedProduct.price ? Number(selectedProduct.price).toLocaleString('id-ID') : "0"}
+                      Rp {selectedProduct.harga ? Number(selectedProduct.harga).toLocaleString('id-ID') : "0"}
                     </p>
                     <button 
                       onClick={() => setShowPaymentOptions(true)} 
@@ -139,8 +139,9 @@ function EtalaseContent() {
                     <button onClick={() => setShowPaymentOptions(false)} className="text-blue-600 font-bold mb-6 flex items-center justify-center gap-2 mx-auto hover:gap-4 transition-all">
                       ← Kembali ke Detail
                     </button>
+                    {/* PERBAIKAN 4: Mengubah selectedProduct.price menjadi selectedProduct.harga pada link WhatsApp */}
                     <a 
-                      href={`https://wa.me/6281214562122?text=Halo Bihin Nisan, saya ingin pesan produk ini:%0A%0A- Nama: ${selectedProduct.nama}%0A- Kategori: ${selectedProduct.kategori}%0A- Harga: Rp ${Number(selectedProduct.price).toLocaleString('id-ID')}`} 
+                      href={`https://wa.me/6281214562122?text=Halo Bihin Nisan, saya ingin pesan produk ini:%0A%0A- Nama: ${selectedProduct.nama}%0A- Kategori: ${selectedProduct.kategori}%0A- Harga: Rp ${selectedProduct.harga ? Number(selectedProduct.harga).toLocaleString('id-ID') : "0"}`} 
                       target="_blank" 
                       className="block w-full bg-green-500 text-white py-5 rounded-2xl font-bold mb-8 hover:bg-green-600 shadow-lg shadow-green-100 transition-all"
                     >
