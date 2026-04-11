@@ -8,7 +8,6 @@ export default function AdminPage() {
   const [produkList, setProdukList] = useState([]);
   const [nama, setNama] = useState("");
   const [harga, setHarga] = useState("");
-  // Pastikan value default sesuai dengan kodingan filter kamu (misal huruf kecil/besar)
   const [kategori, setKategori] = useState("custom"); 
   const [fileFoto, setFileFoto] = useState(null);
   const [previewFoto, setPreviewFoto] = useState("");
@@ -20,12 +19,14 @@ export default function AdminPage() {
   const [namaPembeli, setNamaPembeli] = useState("");
   const [waPembeli, setWaPembeli] = useState("");
   const [produkDipesan, setProdukDipesan] = useState("");
+  
+  // TAMBAHAN STATE BARU UNTUK ADMIN
+  const [metodeAmbil, setMetodeAmbil] = useState("Pesan Antar");
+  const [metodeBayar, setMetodeBayar] = useState("Bayar di Tempat");
 
   const router = useRouter();
 
-  // 1. Ambil data dari Supabase & LocalStorage (untuk pesanan)
   async function ambilData() {
-    // Ambil Testimoni dari Supabase
     const { data: testies } = await supabase
       .from('testimonis')
       .select('*')
@@ -33,14 +34,12 @@ export default function AdminPage() {
       .order('created_at', { ascending: false });
     if (testies) setKomentarList(testies);
 
-    // AMBIL PRODUK DARI SUPABASE (Bukan localStorage lagi)
     const { data: produkData, error: produkError } = await supabase
       .from('products')
       .select('*')
       .order('created_at', { ascending: false });
     if (produkData) setProdukList(produkData);
 
-    // Ambil data pesanan dari localStorage (nanti bisa dipindah ke Supabase juga kalau mau)
     const savedPesanan = localStorage.getItem("db_pesanan");
     if (savedPesanan) setPesananList(JSON.parse(savedPesanan));
   }
@@ -54,7 +53,7 @@ export default function AdminPage() {
     }
   }, []);
 
-  // --- FUNGSI PESANAN ---
+  // --- FUNGSI PESANAN (UPDATED) ---
   const tambahPesanan = (e) => {
     e.preventDefault();
     const baru = {
@@ -62,13 +61,18 @@ export default function AdminPage() {
       nama_pembeli: namaPembeli,
       wa_pembeli: waPembeli,
       produk: produkDipesan,
+      metode_ambil: metodeAmbil, // Data Baru
+      metode_bayar: metodeBayar, // Data Baru
       status: "Proses", 
       update_tgl: new Date().toLocaleString('id-ID')
     };
     const update = [baru, ...pesananList];
     setPesananList(update);
     localStorage.setItem("db_pesanan", JSON.stringify(update));
+    
+    // Reset Form
     setNamaPembeli(""); setWaPembeli(""); setProdukDipesan("");
+    setMetodeAmbil("Pesan Antar"); setMetodeBayar("Bayar di Tempat");
     alert("Pesanan berhasil dicatat!");
   };
 
@@ -104,7 +108,7 @@ export default function AdminPage() {
     }
   };
 
-  // --- FUNGSI PRODUK (SUDAH FULL SUPABASE) ---
+  // --- FUNGSI PRODUK ---
   const uploadKeBucket = async (file) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
@@ -120,31 +124,25 @@ export default function AdminPage() {
     setLoading(true);
     
     try {
-      // 1. Upload Foto dulu ke Storage Supabase
       const urlFotoCloud = await uploadKeBucket(fileFoto);
-      
-      // 2. Siapkan data produk untuk database
       const produkBaru = { 
         nama: nama, 
-        harga: Number(harga.replace(/\D/g, "")), // Pastikan format angka 
+        harga: Number(harga.replace(/\D/g, "")), 
         foto: urlFotoCloud, 
         kategori: kategori 
       };
 
-      // 3. Masukkan ke tabel 'products' di Supabase
       const { data, error } = await supabase
         .from('products')
         .insert([produkBaru])
-        .select(); // Minta Supabase kembalikan data yang berhasil masuk
+        .select();
 
       if (error) throw error;
 
-      // 4. Update tampilan tabel langsung tanpa perlu refresh
       if (data && data.length > 0) {
         setProdukList([data[0], ...produkList]);
       }
       
-      // 5. Bersihkan Form
       setNama(""); setHarga(""); setPreviewFoto(""); setFileFoto(null);
       alert("Mantap! Produk Berhasil Masuk ke Database!");
     } catch (err) {
@@ -164,7 +162,6 @@ export default function AdminPage() {
     }
   };
 
-  // Fungsi Hapus Produk di Supabase
   const hapusProduk = async (id) => {
     if (confirm("Yakin ingin menghapus produk ini dari database?")) {
       const { error } = await supabase.from('products').delete().eq('id', id);
@@ -186,7 +183,7 @@ export default function AdminPage() {
           <button onClick={() => {localStorage.removeItem("isLoggedIn"); window.location.replace("/login");}} className="bg-red-500 text-white px-6 py-2 rounded-xl font-bold">LOGOUT</button>
         </div>
 
-        {/* GRID UTAMA: TAMBAH PRODUK & TAMBAH PESANAN */}
+        {/* GRID UTAMA */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
           
           {/* FORM PRODUK */}
@@ -210,25 +207,36 @@ export default function AdminPage() {
             </form>
           </div>
 
-          {/* FORM PESANAN BARU */}
+          {/* FORM PESANAN BARU (UPDATED) */}
           <div className="bg-white p-8 rounded-[35px] shadow-md border border-green-100">
             <h2 className="text-xl font-bold mb-6 text-green-600">📝 Catat Pesanan Baru</h2>
             <form onSubmit={tambahPesanan} className="space-y-4">
               <input type="text" placeholder="Nama Pembeli" className="w-full p-4 border rounded-2xl bg-gray-50" value={namaPembeli} onChange={(e) => setNamaPembeli(e.target.value)} required />
-              <input type="text" placeholder="Nomor WhatsApp (Cth: 0812...)" className="w-full p-4 border rounded-2xl bg-gray-50" value={waPembeli} onChange={(e) => setWaPembeli(e.target.value)} required />
-              <input type="text" placeholder="Produk yang Dipesan" className="w-full p-4 border rounded-2xl bg-gray-50" value={produkDipesan} onChange={(e) => setProdukDipesan(e.target.value)} required />
+              <input type="text" placeholder="WhatsApp (Cth: 0812...)" className="w-full p-4 border rounded-2xl bg-gray-50" value={waPembeli} onChange={(e) => setWaPembeli(e.target.value)} required />
+              <input type="text" placeholder="Produk Dipesan" className="w-full p-4 border rounded-2xl bg-gray-50" value={produkDipesan} onChange={(e) => setProdukDipesan(e.target.value)} required />
+              
+              <div className="grid grid-cols-2 gap-3">
+                <select value={metodeAmbil} onChange={(e) => setMetodeAmbil(e.target.value)} className="p-4 border rounded-2xl bg-white text-xs font-bold">
+                  <option value="Pesan Antar">🚚 Pesan Antar</option>
+                  <option value="Ambil Sendiri">🏪 Ambil Sendiri</option>
+                </select>
+                <select value={metodeBayar} onChange={(e) => setMetodeBayar(e.target.value)} className="p-4 border rounded-2xl bg-white text-xs font-bold">
+                  <option value="Bayar di Tempat">💵 COD</option>
+                  <option value="Transfer Online">💳 Transfer</option>
+                </select>
+              </div>
+
               <button type="submit" className="w-full bg-green-600 text-white py-4 rounded-2xl font-black">
                 SIMPAN PESANAN
               </button>
             </form>
           </div>
-
         </div>
 
-        {/* MONITORING PESANAN (LACAK PESANAN) */}
+        {/* MONITORING PESANAN (UPDATED TABLE) */}
         <div className="bg-white rounded-[35px] shadow-xl border overflow-hidden mb-10">
           <div className="p-6 bg-green-600 text-white font-bold uppercase tracking-widest flex justify-between">
-            <span>Daftar Pesanan & Status Lacak</span>
+            <span>Monitoring Pesanan</span>
             <span className="bg-white text-green-600 px-3 rounded-full text-xs flex items-center">{pesananList.length} Order</span>
           </div>
           <div className="overflow-x-auto">
@@ -236,8 +244,8 @@ export default function AdminPage() {
               <thead>
                 <tr className="bg-gray-50 text-xs uppercase text-gray-500 font-bold">
                   <th className="p-5">Pembeli</th>
-                  <th className="p-5">Produk</th>
-                  <th className="p-5">Status Saat Ini</th>
+                  <th className="p-5">Produk & Detail</th>
+                  <th className="p-5">Status</th>
                   <th className="p-5">Aksi</th>
                 </tr>
               </thead>
@@ -248,7 +256,17 @@ export default function AdminPage() {
                       <p className="font-bold">{p.nama_pembeli}</p>
                       <p className="text-xs text-gray-400">{p.wa_pembeli}</p>
                     </td>
-                    <td className="p-5 font-medium">{p.produk}</td>
+                    <td className="p-5">
+                      <p className="font-medium">{p.produk}</p>
+                      <div className="flex gap-2 mt-1">
+                        <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">
+                          {p.metode_ambil || "Pesan Antar"}
+                        </span>
+                        <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">
+                          {p.metode_bayar || "COD"}
+                        </span>
+                      </div>
+                    </td>
                     <td className="p-5">
                       <select 
                         value={p.status} 
@@ -274,55 +292,42 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* BAGIAN PRODUK & TESTIMONI TETAP DI BAWAH */}
+        {/* BAGIAN PRODUK & TESTIMONI (TETAP) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-           {/* DAFTAR PRODUK DARI SUPABASE */}
            <div className="bg-white rounded-3xl shadow-md border overflow-hidden">
               <div className="p-4 bg-slate-800 text-white font-bold">📦 Katalog Produk Database</div>
               <div className="divide-y max-h-[400px] overflow-y-auto">
-                {produkList.length > 0 ? (
-                  produkList.map(p => (
-                    <div key={p.id} className="p-4 flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        <img src={p.foto} className="w-12 h-12 object-cover rounded-lg" alt="" />
-                        <div>
-                          <p className="text-sm font-bold">{p.nama}</p>
-                          <p className="text-[10px] text-gray-500 uppercase">{p.kategori}</p>
-                        </div>
+                {produkList.map(p => (
+                  <div key={p.id} className="p-4 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <img src={p.foto} className="w-12 h-12 object-cover rounded-lg" alt="" />
+                      <div>
+                        <p className="text-sm font-bold">{p.nama}</p>
+                        <p className="text-[10px] text-gray-500 uppercase">{p.kategori}</p>
                       </div>
-                      <button onClick={() => hapusProduk(p.id)} className="bg-red-50 hover:bg-red-100 text-red-500 px-3 py-1 rounded-lg text-xs font-bold transition">
-                        Hapus
-                      </button>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-center text-gray-400 italic p-6">Belum ada produk di database.</p>
-                )}
+                    <button onClick={() => hapusProduk(p.id)} className="bg-red-50 hover:bg-red-100 text-red-500 px-3 py-1 rounded-lg text-xs font-bold transition">Hapus</button>
+                  </div>
+                ))}
               </div>
            </div>
 
-           {/* DAFTAR TESTIMONI */}
            <div className="bg-white rounded-3xl shadow-md border overflow-hidden">
               <div className="p-4 bg-yellow-500 text-white font-bold">💬 Testimoni Pending</div>
              <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
-                {komentarList.length > 0 ? (
-                  komentarList.map((k, index) => (
-                    <div key={`${k.nama}-${index}`} className="border-b pb-2">
-                      <p className="font-bold text-sm uppercase">{k.nama}</p>
-                      <p className="text-xs italic text-gray-600">"{k.pesan}"</p>
-                      <div className="flex gap-2 mt-3">
-                        <button onClick={() => terimaKomentar(k.nama)} className="text-[10px] bg-green-500 hover:bg-green-600 font-bold text-white px-3 py-1 rounded">Terima</button>
-                        <button onClick={() => tolakKomentar(k.nama)} className="text-[10px] bg-red-500 hover:bg-red-600 font-bold text-white px-3 py-1 rounded">Tolak</button>
-                      </div>
+                {komentarList.map((k, index) => (
+                  <div key={`${k.nama}-${index}`} className="border-b pb-2">
+                    <p className="font-bold text-sm uppercase">{k.nama}</p>
+                    <p className="text-xs italic text-gray-600">"{k.pesan}"</p>
+                    <div className="flex gap-2 mt-3">
+                      <button onClick={() => terimaKomentar(k.nama)} className="text-[10px] bg-green-500 text-white px-3 py-1 rounded">Terima</button>
+                      <button onClick={() => tolakKomentar(k.nama)} className="text-[10px] bg-red-500 text-white px-3 py-1 rounded">Tolak</button>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-center text-gray-400 text-xs py-4">Belum ada testimoni.</p>
-                )}
+                  </div>
+                ))}
               </div>
            </div>
         </div>
-
       </div>
     </div>
   );

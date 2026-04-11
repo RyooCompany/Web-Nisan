@@ -1,10 +1,21 @@
 "use client";
+import { useState } from 'react';
 import Link from 'next/link';
+import CheckoutModal from '@/components/CheckoutModal'; 
 
 export const dynamic = 'force-dynamic';
 
 export default function CompanyProfile() {
   const noWA = "6281214562122"; 
+  
+  // State untuk menyimpan produk yang dipilih pembeli
+  const [produkTerpilih, setProdukTerpilih] = useState(null);
+
+  // Fungsi pembantu agar tombol "LIHAT PRODUK" bisa membuka modal
+  const bukaModal = (e, nama, harga, kategori) => {
+    e.preventDefault(); // Mencegah Link berpindah halaman secara default
+    setProdukTerpilih({ nama, harga, kategori });
+  };
 
   return (
     <div className="min-h-screen bg-white text-gray-800 font-sans scroll-smooth">
@@ -26,7 +37,7 @@ export default function CompanyProfile() {
         </div>
       </section>
 
-      {/* PROFIL PERUSAHAAN - BAGIAN YANG DIPERBAIKI */}
+      {/* PROFIL PERUSAHAAN */}
       <section id="profil" className="py-16 px-6 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
         <div className="order-2 md:order-1 text-center md:text-left">
           <div className="bg-blue-600 w-20 h-1 mb-6 mx-auto md:mx-0"></div>
@@ -44,7 +55,6 @@ export default function CompanyProfile() {
           </div>
         </div>
 
-        {/* LOGO SEKARANG FULL TANPA PADDING */}
         <div className="order-1 md:order-2 bg-gray-50 aspect-square rounded-[32px] md:rounded-[40px] overflow-hidden shadow-xl border border-gray-100 relative group p-0">
           <img 
             src="/logo(1).png" 
@@ -63,26 +73,38 @@ export default function CompanyProfile() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
-            <Link href="/produk?filter=kramik" className="group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500">
+            {/* Kartu Nisan Keramik */}
+            <div 
+              onClick={(e) => bukaModal(e, "Nisan Keramik", 750000, "keramik")}
+              className="cursor-pointer group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500"
+            >
               <div className="text-5xl mb-6 grayscale group-hover:grayscale-0 transition">🪦</div>
               <h4 className="text-xl font-bold mb-3 group-hover:text-black">Nisan Keramik</h4>
               <p className="text-gray-400 text-sm mb-6 group-hover:text-gray-600 italic">Bahan Keramik Mulus & Awet.</p>
               <span className="text-blue-400 group-hover:text-blue-600 font-black text-sm">LIHAT PRODUK →</span>
-            </Link>
+            </div>
 
-            <Link href="/produk?filter=granit" className="group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500">
+            {/* Kartu Prasasti Granit */}
+            <div 
+              onClick={(e) => bukaModal(e, "Prasasti Granit", 1200000, "granit")}
+              className="cursor-pointer group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500"
+            >
               <div className="text-5xl mb-6 grayscale group-hover:grayscale-0 transition">⬛</div>
               <h4 className="text-xl font-bold mb-3 group-hover:text-black">Prasasti Granit</h4>
               <p className="text-gray-400 text-sm mb-6 group-hover:text-gray-600 italic">Kesan mewah dan kokoh.</p>
               <span className="text-blue-400 group-hover:text-blue-600 font-black text-sm">LIHAT PRODUK →</span>
-            </Link>
+            </div>
 
-            <Link href="/produk?filter=Costum Desain" className="group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500">
+            {/* Kartu Custom Desain */}
+            <div 
+              onClick={(e) => bukaModal(e, "Custom Desain", 500000, "custom")}
+              className="cursor-pointer group bg-gray-800 p-8 md:p-10 rounded-[24px] md:rounded-[32px] hover:bg-white transition-all duration-500"
+            >
               <div className="text-5xl mb-6 grayscale group-hover:grayscale-0 transition">⚒️</div>
               <h4 className="text-xl font-bold mb-3 group-hover:text-black">Custom Desain</h4>
               <p className="text-gray-400 text-sm mb-6 group-hover:text-gray-600 italic">Sesuai keinginan Anda.</p>
               <span className="text-blue-400 group-hover:text-blue-600 font-black text-sm">LIHAT PRODUK →</span>
-            </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -91,10 +113,16 @@ export default function CompanyProfile() {
       <footer className="py-10 border-t bg-gray-50 px-6 text-center">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 text-gray-400 text-xs">
           <p>&copy; 2026 BihinNisan.</p>
-          <div className="flex gap-4 font-bold">
-          </div>
         </div>
       </footer>
+
+      {/* MODAL CHECKOUT - Muncul secara otomatis jika ada produk terpilih */}
+      {produkTerpilih && (
+        <CheckoutModal 
+          produk={produkTerpilih} 
+          onClose={() => setProdukTerpilih(null)} 
+        />
+      )}
     </div>
   );
 }
