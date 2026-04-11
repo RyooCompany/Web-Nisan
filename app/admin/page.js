@@ -20,6 +20,7 @@ export default function AdminPage() {
   const [namaPembeli, setNamaPembeli] = useState("");
   const [waPembeli, setWaPembeli] = useState("");
   const [produkDipesan, setProdukDipesan] = useState("");
+  const [metodeBayar, setMetodeBayar] = useState("COD");
 
   const router = useRouter();
 
