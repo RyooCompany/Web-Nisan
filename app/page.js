@@ -1,7 +1,7 @@
 "use client";
 import { useState } from 'react';
 import Link from 'next/link';
-import CheckoutModal from '@/components/CheckoutModal'; 
+import CheckoutModal from "@/components/CheckoutModal";
 
 export const dynamic = 'force-dynamic';
 
