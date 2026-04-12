@@ -17,10 +17,9 @@ export default function AdminPage() {
   const [pesananList, setPesananList] = useState([]);
   const [namaPembeli, setNamaPembeli] = useState("");
   const [waPembeli, setWaPembeli] = useState("");
-  const [alamatPembeli, setAlamatPembeli] = useState(""); // STATE BARU: Alamat
+  const [alamatPembeli, setAlamatPembeli] = useState(""); 
   const [produkDipesan, setProdukDipesan] = useState("");
-  const [metodeAmbil, setMetodeAmbil] = useState("Pesan Antar");
-  const [metodeBayar, setMetodeBayar] = useState("Bayar di Tempat");
+  const [metodeBayar, setMetodeBayar] = useState("Bayar di Tempat"); // Hanya metode bayar yang tersisa
 
   const router = useRouter();
 
@@ -58,9 +57,8 @@ export default function AdminPage() {
       id: Date.now(),
       nama_pembeli: namaPembeli,
       wa_pembeli: waPembeli,
-      alamat_pembeli: alamatPembeli, // TAMBAHAN: Simpan alamat
+      alamat_pembeli: alamatPembeli, 
       produk: produkDipesan,
-      metode_ambil: metodeAmbil,
       metode_bayar: metodeBayar, 
       status: "Proses", 
       update_tgl: new Date().toLocaleString('id-ID')
@@ -71,7 +69,7 @@ export default function AdminPage() {
     
     // Reset Form
     setNamaPembeli(""); setWaPembeli(""); setAlamatPembeli(""); setProdukDipesan("");
-    setMetodeAmbil("Pesan Antar"); setMetodeBayar("Bayar di Tempat");
+    setMetodeBayar("Bayar di Tempat");
     alert("Pesanan manual berhasil dicatat!");
   };
 
@@ -91,7 +89,7 @@ export default function AdminPage() {
     }
   };
 
-  // --- FUNGSI TESTIMONI & PRODUK (Tetap Sama) ---
+  // --- FUNGSI TESTIMONI & PRODUK ---
   const terimaKomentar = async (idUlasan) => {
     const { error } = await supabase.from('testimonis').update({ is_approved: true }).eq('id', idUlasan); 
     if (!error) {
@@ -186,22 +184,19 @@ export default function AdminPage() {
             </form>
           </div>
 
-          {/* FORM PESANAN MANUAL (UPDATED DENGAN ALAMAT) */}
+          {/* FORM PESANAN MANUAL */}
           <div className="bg-white p-8 rounded-[35px] shadow-md border border-green-100">
             <h2 className="text-xl font-bold mb-6 text-green-600">📝 Catat Pesanan Manual</h2>
             <form onSubmit={tambahPesanan} className="space-y-3">
               <input type="text" placeholder="Nama Pembeli" className="w-full p-3.5 border rounded-2xl bg-gray-50 text-sm" value={namaPembeli} onChange={(e) => setNamaPembeli(e.target.value)} required />
               <input type="text" placeholder="WhatsApp (08...)" className="w-full p-3.5 border rounded-2xl bg-gray-50 text-sm" value={waPembeli} onChange={(e) => setWaPembeli(e.target.value)} required />
-              <textarea placeholder="Alamat Lengkap" className="w-full p-3.5 border rounded-2xl bg-gray-50 text-sm h-20 resize-none" value={alamatPembeli} onChange={(e) => setAlamatPembeli(e.target.value)} required></textarea>
+              <textarea placeholder="Alamat Lengkap" className="w-full p-3.5 border rounded-2xl bg-gray-50 text-sm h-20 resize-none custom-scrollbar" value={alamatPembeli} onChange={(e) => setAlamatPembeli(e.target.value)} required></textarea>
               <input type="text" placeholder="Produk Dipesan" className="w-full p-3.5 border rounded-2xl bg-gray-50 text-sm" value={produkDipesan} onChange={(e) => setProdukDipesan(e.target.value)} required />
               
-              <div className="grid grid-cols-2 gap-3">
-                <select value={metodeAmbil} onChange={(e) => setMetodeAmbil(e.target.value)} className="p-3.5 border rounded-2xl bg-white text-xs font-bold">
-                  <option value="Pesan Antar">🚚 Pesan Antar</option>
-                  <option value="Ambil Sendiri">🏪 Ambil Sendiri</option>
-                </select>
-                <select value={metodeBayar} onChange={(e) => setMetodeBayar(e.target.value)} className="p-3.5 border rounded-2xl bg-white text-xs font-bold">
-                  <option value="Bayar di Tempat">💵 COD</option>
+              {/* Hanya ada pilihan metode pembayaran sekarang */}
+              <div className="w-full">
+                <select value={metodeBayar} onChange={(e) => setMetodeBayar(e.target.value)} className="w-full p-3.5 border rounded-2xl bg-white text-xs font-bold outline-none focus:border-green-500">
+                  <option value="Bayar di Tempat">💵 Bayar di Tempat (COD)</option>
                   <option value="E-Wallet / QRIS">📱 E-Wallet / QRIS</option>
                 </select>
               </div>
@@ -213,7 +208,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* TABEL MONITORING PESANAN (UPDATED MENAMPILKAN ALAMAT) */}
+        {/* TABEL MONITORING PESANAN */}
         <div className="bg-white rounded-[35px] shadow-xl border overflow-hidden mb-10">
           <div className="p-6 bg-green-600 text-white font-bold uppercase tracking-widest flex justify-between items-center">
             <span>Daftar Pesanan (Web & Manual)</span>
@@ -224,7 +219,7 @@ export default function AdminPage() {
               <thead>
                 <tr className="bg-gray-50 text-xs uppercase text-gray-500 font-bold border-b border-gray-100">
                   <th className="p-5 w-1/3">Info Pembeli</th>
-                  <th className="p-5">Produk & Metode</th>
+                  <th className="p-5">Produk & Pembayaran</th>
                   <th className="p-5">Status</th>
                   <th className="p-5 text-center">Aksi</th>
                 </tr>
@@ -233,11 +228,9 @@ export default function AdminPage() {
                 {pesananList.map((p) => (
                   <tr key={p.id} className="hover:bg-blue-50/50 transition-colors">
                     
-                    {/* KOLOM PEMBELI + ALAMAT */}
                     <td className="p-5">
                       <p className="font-bold text-gray-900">{p.nama_pembeli}</p>
                       <p className="text-xs text-blue-600 font-bold mt-0.5">{p.wa_pembeli}</p>
-                      {/* Menampilkan Alamat di bawah WA */}
                       {p.alamat_pembeli && (
                         <p className="text-[10px] text-gray-500 mt-2 bg-gray-50 p-2 rounded-lg border border-gray-100 leading-relaxed">
                           📍 {p.alamat_pembeli}
@@ -247,14 +240,12 @@ export default function AdminPage() {
 
                     <td className="p-5">
                       <p className="font-bold text-gray-800">{p.produk}</p>
-                      <div className="flex gap-2 mt-2">
-                        <span className="text-[10px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-1 rounded-md font-bold uppercase tracking-wider">
-                          {p.metode_ambil || "Pesan Antar"}
-                        </span>
-                        <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider border ${
-                          p.metode_bayar === "COD" ? "bg-orange-50 text-orange-600 border-orange-100" : "bg-teal-50 text-teal-600 border-teal-100"
+                      <div className="mt-2">
+                        {/* Hanya menampilkan badge pembayaran */}
+                        <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider border inline-block ${
+                          p.metode_bayar === "Bayar di Tempat" || p.metode_bayar === "COD" ? "bg-orange-50 text-orange-600 border-orange-100" : "bg-teal-50 text-teal-600 border-teal-100"
                         }`}>
-                          {p.metode_bayar || "COD"}
+                          {p.metode_bayar === "Bayar di Tempat" || p.metode_bayar === "COD" ? "COD" : "Transfer / QRIS"}
                         </span>
                       </div>
                     </td>
@@ -287,7 +278,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* KATALOG & TESTIMONI BAWAH TETAP */}
+        {/* KATALOG & TESTIMONI BAWAH */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
            <div className="bg-white rounded-3xl shadow-md border overflow-hidden">
               <div className="p-4 bg-slate-800 text-white font-bold">📦 Katalog Produk Database</div>

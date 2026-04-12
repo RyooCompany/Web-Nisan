@@ -77,8 +77,8 @@ export default function LacakPesanan() {
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 ${
                       pesanan.status === "Proses" || pesanan.status === "Diukir" || pesanan.status === "Selesai" 
                       ? "bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-500/20" : "bg-white border-slate-200 text-slate-300"
-                    }`}>📦</div>
-                    <span className={`text-[10px] font-bold ${pesanan.status === "Proses" ? "text-blue-600" : "text-slate-500"}`}>Dikemas</span>
+                    }`}>👨🏻‍💻</div>
+                    <span className={`text-[10px] font-bold ${pesanan.status === "Proses" ? "text-blue-600" : "text-slate-500"}`}>Diperoses</span>
                   </div>
 
                   {/* Step 2: Diukir */}
