@@ -34,6 +34,9 @@ export default function CheckoutModal({ produk, onClose }) {
       const dataLama = JSON.parse(localStorage.getItem("db_pesanan") || "[]");
       localStorage.setItem("db_pesanan", JSON.stringify([pesananBaru, ...dataLama]));
 
+      // TANDA PEMBELI: Simpan tanda kalau dia udah beli (Untuk memunculkan menu Lacak)
+      localStorage.setItem("is_pembeli", "true");
+
       alert("Berhasil! Pesanan COD Anda telah masuk ke sistem kami. Admin akan segera memprosesnya.");
       onClose();
 
@@ -51,6 +54,9 @@ export default function CheckoutModal({ produk, onClose }) {
         `💰 Total Bayar: Rp ${totalHarga.toLocaleString("id-ID")}\n\n` +
         `*Catatan:* Saya sudah melakukan transfer QRIS, bukti transfer akan saya lampirkan.`;
       
+      // TANDA PEMBELI: Simpan tanda kalau dia udah beli (Untuk memunculkan menu Lacak)
+      localStorage.setItem("is_pembeli", "true");
+
       window.open(`https://wa.me/6281214562122?text=${encodeURIComponent(pesan)}`, "_blank");
       onClose();
     }
