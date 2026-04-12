@@ -221,9 +221,9 @@ export default function AdminPage() {
                   <option value="Ambil Sendiri">🏪 Ambil Sendiri</option>
                 </select>
                 <select value={metodeBayar} onChange={(e) => setMetodeBayar(e.target.value)} className="p-4 border rounded-2xl bg-white text-xs font-bold">
-                  <option value="Bayar di Tempat">💵 COD</option>
-                  <option value="Transfer Online">💳 Transfer</option>
-                </select>
+                <option value="Bayar di Tempat">💵 Bayar di Tempat (COD)</option>
+                <option value="E-Wallet / QRIS">📱 E-Wallet / QRIS</option>
+              </select>
               </div>
 
               <button type="submit" className="w-full bg-green-600 text-white py-4 rounded-2xl font-black">
