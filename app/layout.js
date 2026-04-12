@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react"; // Tambah useEffect di sini
+import { useState, useEffect } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link"; 
@@ -9,14 +9,26 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export default function RootLayout({ children }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isPembeli, setIsPembeli] = useState(false); // STATE BARU: Buat ngecek KTP Pembeli
+  const [isPembeli, setIsPembeli] = useState(false); 
 
-  // FUNGSI BARU: Ngecek localStorage pas web baru dibuka
+  // FUNGSI BARU: Ngecek localStorage pas web baru dibuka DAN pas ada sinyal dari Checkout
   useEffect(() => {
-    const cekPembeli = localStorage.getItem("is_pembeli");
-    if (cekPembeli === "true") {
-      setIsPembeli(true);
-    }
+    const cekPembeli = () => {
+      if (localStorage.getItem("is_pembeli") === "true") {
+        setIsPembeli(true);
+      }
+    };
+
+    // 1. Cek pas pertama buka web
+    cekPembeli();
+
+    // 2. Dengerin "Sinyal" dari Checkout Modal biar langsung muncul tanpa refresh
+    window.addEventListener("pembeli_baru", cekPembeli);
+
+    // Bersihkan listener kalau komponen dibongkar
+    return () => {
+      window.removeEventListener("pembeli_baru", cekPembeli);
+    };
   }, []);
 
   return (
@@ -43,7 +55,9 @@ export default function RootLayout({ children }) {
               
               {/* TOMBOL LACAK: Cuma muncul kalau isPembeli bernilai true */}
               {isPembeli && (
-                <Link href="/lacak" className="bg-blue-600 text-white px-4 py-2 rounded-lg">Lacak Pesanan</Link>
+                <Link href="/lacak" className="bg-blue-600 text-white px-4 py-2 rounded-lg transition-all animate-in fade-in zoom-in duration-300">
+                  Lacak Pesanan
+                </Link>
               )}
             </div>
 
@@ -72,7 +86,9 @@ export default function RootLayout({ children }) {
                   
                   {/* TOMBOL LACAK HP: Cuma muncul kalau isPembeli bernilai true */}
                   {isPembeli && (
-                    <Link onClick={() => setIsOpen(false)} href="/lacak" className="bg-blue-600 text-white p-4 rounded-xl text-center">Lacak Pesanan</Link>
+                    <Link onClick={() => setIsOpen(false)} href="/lacak" className="bg-blue-600 text-white p-4 rounded-xl text-center transition-all animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      Lacak Pesanan
+                    </Link>
                   )}
                </div>
             </div>

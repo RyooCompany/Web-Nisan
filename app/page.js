@@ -16,7 +16,7 @@ export default function CompanyProfile() {
             Kerajinan Nisan <span className="text-blue-600 underline decoration-blue-200">Keramik & Granit</span> Berkualitas.
           </h2>
           <p className="text-lg md:text-xl text-gray-600 mb-10 leading-relaxed">
-            Melayani pemesanan kustom dengan teknik ukir profesional. Pengiriman aman dan amanah dari Jatihurip, Sumedang.
+            Melayani pemesanan kustom dengan teknik ukir profesional. Pengiriman aman dan amanah dari Provinsi Riau Kab.Pelalawan Kec.Kerumutan dan Sekitarnya
           </p>
           <div className="flex justify-center">
             <a href={`https://wa.me/${noWA}`} className="w-full md:w-auto bg-white text-gray-900 border-2 border-gray-900 px-8 md:px-12 py-4 rounded-2xl font-black hover:bg-gray-900 hover:text-white transition-all shadow-lg active:scale-95 text-center">

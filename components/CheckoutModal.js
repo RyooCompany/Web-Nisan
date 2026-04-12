@@ -34,9 +34,12 @@ export default function CheckoutModal({ produk, onClose }) {
       const dataLama = JSON.parse(localStorage.getItem("db_pesanan") || "[]");
       localStorage.setItem("db_pesanan", JSON.stringify([pesananBaru, ...dataLama]));
 
-      // TANDA PEMBELI: Simpan tanda kalau dia udah beli (Untuk memunculkan menu Lacak)
+      // TANDA PEMBELI: Simpan tanda kalau dia udah beli
       localStorage.setItem("is_pembeli", "true");
       localStorage.setItem("user_wa", wa);
+
+      // --- KODE BARU: Kirim sinyal ke Navbar biar tombol Lacak langsung muncul ---
+      window.dispatchEvent(new Event("pembeli_baru"));
 
       alert("Berhasil! Pesanan COD Anda telah masuk ke sistem kami. Admin akan segera memprosesnya.");
       onClose();
@@ -55,8 +58,12 @@ export default function CheckoutModal({ produk, onClose }) {
         `💰 Total Bayar: Rp ${totalHarga.toLocaleString("id-ID")}\n\n` +
         `*Catatan:* Saya sudah melakukan transfer QRIS, bukti transfer akan saya lampirkan.`;
       
-      // TANDA PEMBELI: Simpan tanda kalau dia udah beli (Untuk memunculkan menu Lacak)
+      // TANDA PEMBELI: Simpan tanda kalau dia udah beli
       localStorage.setItem("is_pembeli", "true");
+      localStorage.setItem("user_wa", wa); // Tambahin juga simpan WA buat QRIS
+
+      // --- KODE BARU: Kirim sinyal ke Navbar biar tombol Lacak langsung muncul ---
+      window.dispatchEvent(new Event("pembeli_baru"));
 
       window.open(`https://wa.me/6281214562122?text=${encodeURIComponent(pesan)}`, "_blank");
       onClose();
@@ -71,7 +78,7 @@ export default function CheckoutModal({ produk, onClose }) {
       `}</style>
 
       <div className="fixed inset-0 z-[999] flex items-end md:items-center justify-center p-0 md:p-6 bg-slate-950/80 backdrop-blur-sm font-sans">
-        {/* Modal Container: Memanjang vertikal (max-w-2xl) */}
+        {/* Modal Container */}
         <div className="bg-[#0B1120] w-full md:max-w-2xl rounded-t-[2rem] md:rounded-[2rem] flex flex-col relative max-h-[90vh] border border-slate-800 shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-bottom-0 md:zoom-in-95 duration-300">
           
           {/* HEADER FIXED */}
@@ -88,7 +95,7 @@ export default function CheckoutModal({ produk, onClose }) {
           {/* BODY SCROLLABLE */}
           <div className="p-6 overflow-y-auto hide-scroll space-y-8 flex-grow">
             
-            {/* 1. RINGKASAN PRODUK (Clean Card) */}
+            {/* 1. RINGKASAN PRODUK */}
             <div className="flex items-center justify-between bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
               <div>
                 <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest bg-blue-500/10 px-2 py-1 rounded-md mb-2 inline-block">
@@ -117,7 +124,7 @@ export default function CheckoutModal({ produk, onClose }) {
               </div>
             </div>
 
-            {/* 3. METODE PEMBAYARAN (Gaya Toggle iOS) */}
+            {/* 3. METODE PEMBAYARAN */}
             <div className="space-y-4">
               <h4 className="text-sm font-bold text-white border-l-2 border-blue-500 pl-3">Metode Pembayaran</h4>
               
@@ -133,7 +140,6 @@ export default function CheckoutModal({ produk, onClose }) {
               {/* AREA DINAMIS PEMBAYARAN */}
               <div className="mt-4">
                 {metodeBayar === "Bayar di Tempat" ? (
-                  // BANNERS COD (Elegan, tidak pakai kotak besar)
                   <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl flex gap-4 items-start">
                     <span className="text-2xl mt-1">🚚</span>
                     <div>
@@ -144,7 +150,6 @@ export default function CheckoutModal({ produk, onClose }) {
                     </div>
                   </div>
                 ) : (
-                  // BANNERS QRIS (Clean White Card)
                   <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col items-center text-center">
                     <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-4">Scan QRIS BIHIN NISAN</p>
                     <div className="bg-white p-3 rounded-xl mb-6">
