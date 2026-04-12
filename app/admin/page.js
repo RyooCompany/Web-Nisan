@@ -1,8 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { supabase } from "../../lib/supabase"; 
+import { supabase } from "../../lib/supabase";
 
 export default function AdminPage() {
   const [produkList, setProdukList] = useState([]);
@@ -14,13 +13,12 @@ export default function AdminPage() {
   const [komentarList, setKomentarList] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // STATE: Untuk Lacak Pesanan
+  // STATE: Untuk Lacak Pesanan & Input Manual
   const [pesananList, setPesananList] = useState([]);
   const [namaPembeli, setNamaPembeli] = useState("");
   const [waPembeli, setWaPembeli] = useState("");
+  const [alamatPembeli, setAlamatPembeli] = useState(""); // STATE BARU: Alamat
   const [produkDipesan, setProdukDipesan] = useState("");
-  
-  // TAMBAHAN STATE BARU UNTUK ADMIN
   const [metodeAmbil, setMetodeAmbil] = useState("Pesan Antar");
   const [metodeBayar, setMetodeBayar] = useState("Bayar di Tempat");
 
@@ -34,7 +32,7 @@ export default function AdminPage() {
       .order('created_at', { ascending: false });
     if (testies) setKomentarList(testies);
 
-    const { data: produkData, error: produkError } = await supabase
+    const { data: produkData } = await supabase
       .from('products')
       .select('*')
       .order('created_at', { ascending: false });
@@ -53,16 +51,17 @@ export default function AdminPage() {
     }
   }, []);
 
-  // --- FUNGSI PESANAN (UPDATED) ---
+  // --- FUNGSI PESANAN MANUAL ---
   const tambahPesanan = (e) => {
     e.preventDefault();
     const baru = {
       id: Date.now(),
       nama_pembeli: namaPembeli,
       wa_pembeli: waPembeli,
+      alamat_pembeli: alamatPembeli, // TAMBAHAN: Simpan alamat
       produk: produkDipesan,
-      metode_ambil: metodeAmbil, // Data Baru
-      metode_bayar: metodeBayar, // Data Baru
+      metode_ambil: metodeAmbil,
+      metode_bayar: metodeBayar, 
       status: "Proses", 
       update_tgl: new Date().toLocaleString('id-ID')
     };
@@ -71,9 +70,9 @@ export default function AdminPage() {
     localStorage.setItem("db_pesanan", JSON.stringify(update));
     
     // Reset Form
-    setNamaPembeli(""); setWaPembeli(""); setProdukDipesan("");
+    setNamaPembeli(""); setWaPembeli(""); setAlamatPembeli(""); setProdukDipesan("");
     setMetodeAmbil("Pesan Antar"); setMetodeBayar("Bayar di Tempat");
-    alert("Pesanan berhasil dicatat!");
+    alert("Pesanan manual berhasil dicatat!");
   };
 
   const updateStatusPesanan = (id, statusBaru) => {
@@ -92,23 +91,22 @@ export default function AdminPage() {
     }
   };
 
-  // --- FUNGSI TESTIMONI ---
-  const terimaKomentar = async (namaKunci) => {
-    const { error } = await supabase.from('testimonis').update({ is_approved: true }).eq('nama', namaKunci);
+  // --- FUNGSI TESTIMONI & PRODUK (Tetap Sama) ---
+  const terimaKomentar = async (idUlasan) => {
+    const { error } = await supabase.from('testimonis').update({ is_approved: true }).eq('id', idUlasan); 
     if (!error) {
-      setKomentarList(komentarList.filter(k => k.nama !== namaKunci));
+      setKomentarList(komentarList.filter(k => k.id !== idUlasan));
       alert("Testimoni diterima!");
     }
   };
 
-  const tolakKomentar = async (namaKunci) => {
-    if (confirm(`Hapus ulasan dari ${namaKunci}?`)) {
-      const { error } = await supabase.from('testimonis').delete().eq('nama', namaKunci);
-      if (!error) setKomentarList(komentarList.filter(k => k.nama !== namaKunci));
+  const tolakKomentar = async (idUlasan, namaOrang) => {
+    if (confirm(`Hapus ulasan dari ${namaOrang}?`)) {
+      const { error } = await supabase.from('testimonis').delete().eq('id', idUlasan);
+      if (!error) setKomentarList(komentarList.filter(k => k.id !== idUlasan));
     }
   };
 
-  // --- FUNGSI PRODUK ---
   const uploadKeBucket = async (file) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
@@ -122,29 +120,14 @@ export default function AdminPage() {
     e.preventDefault();
     if (!fileFoto) return alert("Pilih foto!");
     setLoading(true);
-    
     try {
       const urlFotoCloud = await uploadKeBucket(fileFoto);
-      const produkBaru = { 
-        nama: nama, 
-        harga: Number(harga.replace(/\D/g, "")), 
-        foto: urlFotoCloud, 
-        kategori: kategori 
-      };
-
-      const { data, error } = await supabase
-        .from('products')
-        .insert([produkBaru])
-        .select();
-
+      const produkBaru = { nama, harga: Number(harga.replace(/\D/g, "")), foto: urlFotoCloud, kategori };
+      const { data, error } = await supabase.from('products').insert([produkBaru]).select();
       if (error) throw error;
-
-      if (data && data.length > 0) {
-        setProdukList([data[0], ...produkList]);
-      }
-      
+      if (data && data.length > 0) setProdukList([data[0], ...produkList]);
       setNama(""); setHarga(""); setPreviewFoto(""); setFileFoto(null);
-      alert("Mantap! Produk Berhasil Masuk ke Database!");
+      alert("Produk Berhasil Masuk ke Database!");
     } catch (err) {
       alert("Gagal: " + err.message);
     } finally {
@@ -163,13 +146,9 @@ export default function AdminPage() {
   };
 
   const hapusProduk = async (id) => {
-    if (confirm("Yakin ingin menghapus produk ini dari database?")) {
+    if (confirm("Yakin ingin menghapus produk ini?")) {
       const { error } = await supabase.from('products').delete().eq('id', id);
-      if (!error) {
-        setProdukList(produkList.filter(p => p.id !== id));
-      } else {
-        alert("Gagal menghapus produk!");
-      }
+      if (!error) setProdukList(produkList.filter(p => p.id !== id));
     }
   };
 
@@ -180,13 +159,13 @@ export default function AdminPage() {
         {/* HEADER */}
         <div className="flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm mb-8">
           <h1 className="text-2xl font-black text-blue-600 tracking-tighter">BIHIN ADMIN PANEL</h1>
-          <button onClick={() => {localStorage.removeItem("isLoggedIn"); window.location.replace("/login");}} className="bg-red-500 text-white px-6 py-2 rounded-xl font-bold">LOGOUT</button>
+          <button onClick={() => {localStorage.removeItem("isLoggedIn"); window.location.replace("/");}} className="bg-red-500 hover:bg-red-600 text-white px-8 py-2 rounded-xl font-bold transition">LOGOUT</button>
         </div>
 
         {/* GRID UTAMA */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
           
-          {/* FORM PRODUK */}
+          {/* FORM TAMBAH PRODUK */}
           <div className="bg-white p-8 rounded-[35px] shadow-md border">
             <h2 className="text-xl font-bold mb-6 text-blue-600">📦 Tambah Produk Baru</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -202,78 +181,91 @@ export default function AdminPage() {
                 {previewFoto && <img src={previewFoto} alt="Preview" className="mt-4 h-32 w-full object-cover rounded-xl" />}
               </div>
               <button disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black disabled:bg-gray-400">
-                {loading ? "MENYIMPAN KE DATABASE..." : "SIMPAN PRODUK"}
+                {loading ? "MENYIMPAN..." : "SIMPAN PRODUK"}
               </button>
             </form>
           </div>
 
-          {/* FORM PESANAN BARU (UPDATED) */}
+          {/* FORM PESANAN MANUAL (UPDATED DENGAN ALAMAT) */}
           <div className="bg-white p-8 rounded-[35px] shadow-md border border-green-100">
-            <h2 className="text-xl font-bold mb-6 text-green-600">📝 Catat Pesanan Baru</h2>
-            <form onSubmit={tambahPesanan} className="space-y-4">
-              <input type="text" placeholder="Nama Pembeli" className="w-full p-4 border rounded-2xl bg-gray-50" value={namaPembeli} onChange={(e) => setNamaPembeli(e.target.value)} required />
-              <input type="text" placeholder="WhatsApp (Cth: 0812...)" className="w-full p-4 border rounded-2xl bg-gray-50" value={waPembeli} onChange={(e) => setWaPembeli(e.target.value)} required />
-              <input type="text" placeholder="Produk Dipesan" className="w-full p-4 border rounded-2xl bg-gray-50" value={produkDipesan} onChange={(e) => setProdukDipesan(e.target.value)} required />
+            <h2 className="text-xl font-bold mb-6 text-green-600">📝 Catat Pesanan Manual</h2>
+            <form onSubmit={tambahPesanan} className="space-y-3">
+              <input type="text" placeholder="Nama Pembeli" className="w-full p-3.5 border rounded-2xl bg-gray-50 text-sm" value={namaPembeli} onChange={(e) => setNamaPembeli(e.target.value)} required />
+              <input type="text" placeholder="WhatsApp (08...)" className="w-full p-3.5 border rounded-2xl bg-gray-50 text-sm" value={waPembeli} onChange={(e) => setWaPembeli(e.target.value)} required />
+              <textarea placeholder="Alamat Lengkap" className="w-full p-3.5 border rounded-2xl bg-gray-50 text-sm h-20 resize-none" value={alamatPembeli} onChange={(e) => setAlamatPembeli(e.target.value)} required></textarea>
+              <input type="text" placeholder="Produk Dipesan" className="w-full p-3.5 border rounded-2xl bg-gray-50 text-sm" value={produkDipesan} onChange={(e) => setProdukDipesan(e.target.value)} required />
               
               <div className="grid grid-cols-2 gap-3">
-                <select value={metodeAmbil} onChange={(e) => setMetodeAmbil(e.target.value)} className="p-4 border rounded-2xl bg-white text-xs font-bold">
+                <select value={metodeAmbil} onChange={(e) => setMetodeAmbil(e.target.value)} className="p-3.5 border rounded-2xl bg-white text-xs font-bold">
                   <option value="Pesan Antar">🚚 Pesan Antar</option>
                   <option value="Ambil Sendiri">🏪 Ambil Sendiri</option>
                 </select>
-                <select value={metodeBayar} onChange={(e) => setMetodeBayar(e.target.value)} className="p-4 border rounded-2xl bg-white text-xs font-bold">
-                <option value="Bayar di Tempat">💵 Bayar di Tempat (COD)</option>
-                <option value="E-Wallet / QRIS">📱 E-Wallet / QRIS</option>
-              </select>
+                <select value={metodeBayar} onChange={(e) => setMetodeBayar(e.target.value)} className="p-3.5 border rounded-2xl bg-white text-xs font-bold">
+                  <option value="Bayar di Tempat">💵 COD</option>
+                  <option value="E-Wallet / QRIS">📱 E-Wallet / QRIS</option>
+                </select>
               </div>
 
-              <button type="submit" className="w-full bg-green-600 text-white py-4 rounded-2xl font-black">
+              <button type="submit" className="w-full bg-green-600 text-white py-4 rounded-2xl font-black mt-2">
                 SIMPAN PESANAN
               </button>
             </form>
           </div>
         </div>
 
-        {/* MONITORING PESANAN (UPDATED TABLE) */}
+        {/* TABEL MONITORING PESANAN (UPDATED MENAMPILKAN ALAMAT) */}
         <div className="bg-white rounded-[35px] shadow-xl border overflow-hidden mb-10">
-          <div className="p-6 bg-green-600 text-white font-bold uppercase tracking-widest flex justify-between">
-            <span>Monitoring Pesanan</span>
-            <span className="bg-white text-green-600 px-3 rounded-full text-xs flex items-center">{pesananList.length} Order</span>
+          <div className="p-6 bg-green-600 text-white font-bold uppercase tracking-widest flex justify-between items-center">
+            <span>Daftar Pesanan (Web & Manual)</span>
+            <span className="bg-white text-green-600 px-3 py-1 rounded-full text-xs flex items-center">{pesananList.length} Order</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50 text-xs uppercase text-gray-500 font-bold">
-                  <th className="p-5">Pembeli</th>
-                  <th className="p-5">Produk & Detail</th>
+                <tr className="bg-gray-50 text-xs uppercase text-gray-500 font-bold border-b border-gray-100">
+                  <th className="p-5 w-1/3">Info Pembeli</th>
+                  <th className="p-5">Produk & Metode</th>
                   <th className="p-5">Status</th>
-                  <th className="p-5">Aksi</th>
+                  <th className="p-5 text-center">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y divide-gray-100">
                 {pesananList.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50 transition">
+                  <tr key={p.id} className="hover:bg-blue-50/50 transition-colors">
+                    
+                    {/* KOLOM PEMBELI + ALAMAT */}
                     <td className="p-5">
-                      <p className="font-bold">{p.nama_pembeli}</p>
-                      <p className="text-xs text-gray-400">{p.wa_pembeli}</p>
+                      <p className="font-bold text-gray-900">{p.nama_pembeli}</p>
+                      <p className="text-xs text-blue-600 font-bold mt-0.5">{p.wa_pembeli}</p>
+                      {/* Menampilkan Alamat di bawah WA */}
+                      {p.alamat_pembeli && (
+                        <p className="text-[10px] text-gray-500 mt-2 bg-gray-50 p-2 rounded-lg border border-gray-100 leading-relaxed">
+                          📍 {p.alamat_pembeli}
+                        </p>
+                      )}
                     </td>
+
                     <td className="p-5">
-                      <p className="font-medium">{p.produk}</p>
-                      <div className="flex gap-2 mt-1">
-                        <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">
+                      <p className="font-bold text-gray-800">{p.produk}</p>
+                      <div className="flex gap-2 mt-2">
+                        <span className="text-[10px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-1 rounded-md font-bold uppercase tracking-wider">
                           {p.metode_ambil || "Pesan Antar"}
                         </span>
-                        <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">
+                        <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider border ${
+                          p.metode_bayar === "COD" ? "bg-orange-50 text-orange-600 border-orange-100" : "bg-teal-50 text-teal-600 border-teal-100"
+                        }`}>
                           {p.metode_bayar || "COD"}
                         </span>
                       </div>
                     </td>
+
                     <td className="p-5">
                       <select 
                         value={p.status} 
                         onChange={(e) => updateStatusPesanan(p.id, e.target.value)}
-                        className={`p-2 rounded-lg text-xs font-bold border-none outline-none ${
-                          p.status === "Proses" ? "bg-yellow-100 text-yellow-700" : 
-                          p.status === "Diukir" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
+                        className={`p-2 rounded-xl text-xs font-bold border outline-none cursor-pointer shadow-sm ${
+                          p.status === "Proses" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : 
+                          p.status === "Diukir" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-green-50 text-green-700 border-green-200"
                         }`}
                       >
                         <option value="Proses">Proses</option>
@@ -281,8 +273,11 @@ export default function AdminPage() {
                         <option value="Selesai">Selesai / Dikirim</option>
                       </select>
                     </td>
-                    <td className="p-5">
-                      <button onClick={() => hapusPesanan(p.id)} className="text-red-400 hover:text-red-600 text-sm font-bold">Hapus</button>
+
+                    <td className="p-5 text-center">
+                      <button onClick={() => hapusPesanan(p.id)} className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg text-xs font-black uppercase transition-colors">
+                        Hapus
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -292,21 +287,21 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* BAGIAN PRODUK & TESTIMONI (TETAP) */}
+        {/* KATALOG & TESTIMONI BAWAH TETAP */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
            <div className="bg-white rounded-3xl shadow-md border overflow-hidden">
               <div className="p-4 bg-slate-800 text-white font-bold">📦 Katalog Produk Database</div>
-              <div className="divide-y max-h-[400px] overflow-y-auto">
+              <div className="divide-y max-h-[400px] overflow-y-auto custom-scrollbar">
                 {produkList.map(p => (
-                  <div key={p.id} className="p-4 flex justify-between items-center">
+                  <div key={p.id} className="p-4 flex justify-between items-center hover:bg-gray-50">
                     <div className="flex items-center gap-3">
-                      <img src={p.foto} className="w-12 h-12 object-cover rounded-lg" alt="" />
+                      <img src={p.foto} className="w-12 h-12 object-cover rounded-xl shadow-sm border border-gray-100" alt="" />
                       <div>
                         <p className="text-sm font-bold">{p.nama}</p>
-                        <p className="text-[10px] text-gray-500 uppercase">{p.kategori}</p>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest bg-gray-100 px-2 py-0.5 rounded-md inline-block mt-1">{p.kategori}</p>
                       </div>
                     </div>
-                    <button onClick={() => hapusProduk(p.id)} className="bg-red-50 hover:bg-red-100 text-red-500 px-3 py-1 rounded-lg text-xs font-bold transition">Hapus</button>
+                    <button onClick={() => hapusProduk(p.id)} className="bg-red-50 hover:bg-red-500 hover:text-white text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold transition">Hapus</button>
                   </div>
                 ))}
               </div>
@@ -314,20 +309,22 @@ export default function AdminPage() {
 
            <div className="bg-white rounded-3xl shadow-md border overflow-hidden">
               <div className="p-4 bg-yellow-500 text-white font-bold">💬 Testimoni Pending</div>
-             <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
-                {komentarList.map((k, index) => (
-                  <div key={`${k.nama}-${index}`} className="border-b pb-2">
-                    <p className="font-bold text-sm uppercase">{k.nama}</p>
-                    <p className="text-xs italic text-gray-600">"{k.pesan}"</p>
+             <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                {komentarList.map((k) => (
+                  <div key={k.id} className="border-b border-gray-100 pb-3">
+                    <p className="font-bold text-sm uppercase text-gray-800">{k.nama}</p>
+                    <p className="text-xs italic text-gray-500 mt-1">"{k.pesan}"</p>
                     <div className="flex gap-2 mt-3">
-                      <button onClick={() => terimaKomentar(k.nama)} className="text-[10px] bg-green-500 text-white px-3 py-1 rounded">Terima</button>
-                      <button onClick={() => tolakKomentar(k.nama)} className="text-[10px] bg-red-500 text-white px-3 py-1 rounded">Tolak</button>
+                      <button onClick={() => terimaKomentar(k.id)} className="text-[10px] bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded-lg font-bold shadow-sm transition">Terima</button>
+                      <button onClick={() => tolakKomentar(k.id, k.nama)} className="text-[10px] bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-lg font-bold shadow-sm transition">Tolak</button>
                     </div>
                   </div>
                 ))}
+                {komentarList.length === 0 && <p className="text-center text-gray-400 text-xs py-4">Semua testimoni sudah diproses.</p>}
               </div>
            </div>
         </div>
+
       </div>
     </div>
   );

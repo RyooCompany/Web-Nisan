@@ -5,120 +5,174 @@ export default function CheckoutModal({ produk, onClose }) {
   const [jumlah, setJumlah] = useState(1);
   const [nama, setNama] = useState("");
   const [wa, setWa] = useState("");
-  
-  // Karena fitur pilih metode dihapus, kita set default yang aman.
-  const metodyBayar = "Bayar di Tempat";
-  const metodeAmbil = "Ambil Sendiri"; // Pengiriman terbatas, asumsikan ambil sendiri
-  
-  // Ongkir dinonaktifkan karena pengiriman terbatas.
+  const [alamat, setAlamat] = useState("");
+  const [metodeBayar, setMetodeBayar] = useState("Bayar di Tempat");
+  const [sudahBayar, setSudahBayar] = useState(false);
+
   const ongkir = 0;
   const totalHarga = (produk.harga * jumlah) + ongkir;
 
   const handlePesan = () => {
-    if (!nama || !wa) return alert("Mohon isi Nama Penerima dan Nomor WhatsApp!");
+    if (!nama || !wa || !alamat) {
+      return alert("Mohon lengkapi Nama, Nomor WhatsApp, dan Alamat Lengkap!");
+    }
 
-    const pesan = `Halo Bihin Nisan, saya ingin pesan:\n\n` +
-      `📦 Produk: ${produk.nama}\n` +
-      `🔢 Jumlah: ${jumlah}\n` +
-      `👤 Nama: ${nama}\n` +
-      `🚚 Pengiriman: ${metodeAmbil}\n` +
-      `💳 Pembayaran: ${metodyBayar}\n` +
-      `💰 Total Bayar: Rp ${totalHarga.toLocaleString("id-ID")}\n\n` +
-      `Mohon info selanjutnya, terima kasih!`;
-    
-    window.open(`https://wa.me/6281214562122?text=${encodeURIComponent(pesan)}`, "_blank");
-    onClose();
+    if (metodeBayar === "Bayar di Tempat") {
+      // LOGIKA COD: LANGSUNG SIMPAN KE DATABASE
+      const pesananBaru = {
+        id: Date.now(),
+        nama_pembeli: nama,
+        wa_pembeli: wa,
+        alamat_pembeli: alamat,
+        produk: produk.nama,
+        metode_ambil: "Pesan Antar",
+        metode_bayar: "COD",
+        status: "Proses",
+        update_tgl: new Date().toLocaleString('id-ID')
+      };
+
+      const dataLama = JSON.parse(localStorage.getItem("db_pesanan") || "[]");
+      localStorage.setItem("db_pesanan", JSON.stringify([pesananBaru, ...dataLama]));
+
+      alert("Berhasil! Pesanan COD Anda telah masuk ke sistem kami. Admin akan segera memprosesnya.");
+      onClose();
+
+    } else {
+      // LOGIKA QRIS: KIRIM KE WHATSAPP
+      if (!sudahBayar) return alert("Mohon centang kotak konfirmasi QRIS di bawah barcode!");
+
+      const pesan = `Halo Bihin Nisan, saya ingin pesan:\n\n` +
+        `📦 Produk: ${produk.nama}\n` +
+        `🔢 Jumlah: ${jumlah}\n` +
+        `👤 Nama: ${nama}\n` +
+        `📱 WA: ${wa}\n` +
+        `📍 Alamat: ${alamat}\n` +
+        `💳 Pembayaran: E-Wallet / QRIS\n` +
+        `💰 Total Bayar: Rp ${totalHarga.toLocaleString("id-ID")}\n\n` +
+        `*Catatan:* Saya sudah melakukan transfer QRIS, bukti transfer akan saya lampirkan.`;
+      
+      window.open(`https://wa.me/6281214562122?text=${encodeURIComponent(pesan)}`, "_blank");
+      onClose();
+    }
   };
 
   return (
     <>
-      {/* CSS untuk menyembunyikan scrollbar jelek tapi tetap bisa di-scroll */}
       <style jsx global>{`
-        .hide-scroll::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scroll {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-sm font-sans">
-        <div className="bg-[#0f172a] w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row relative max-h-[95vh] border border-slate-800">
+      <div className="fixed inset-0 z-[999] flex items-end md:items-center justify-center p-0 md:p-6 bg-slate-950/80 backdrop-blur-sm font-sans">
+        {/* Modal Container: Memanjang vertikal (max-w-2xl) */}
+        <div className="bg-[#0B1120] w-full md:max-w-2xl rounded-t-[2rem] md:rounded-[2rem] flex flex-col relative max-h-[90vh] border border-slate-800 shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-bottom-0 md:zoom-in-95 duration-300">
           
-          <button onClick={onClose} className="absolute top-6 right-6 text-slate-500 hover:text-white text-xl font-black z-50 transition-colors">
-            ✕
-          </button>
-
-          {/* KOLOM KIRI: Detail Pengiriman & Peringatan */}
-          <div className="flex-1 p-6 md:p-10 overflow-y-auto hide-scroll border-b md:border-b-0 md:border-r border-slate-800 flex flex-col">
-            <div className="mb-8">
-              <h2 className="text-3xl font-black text-white tracking-tight">Detail Pengiriman</h2>
-              <p className="text-slate-400 mt-1 text-sm">Lengkapi form di bawah ini.</p>
+          {/* HEADER FIXED */}
+          <div className="p-6 border-b border-slate-800/50 flex justify-between items-center shrink-0 bg-[#0B1120] rounded-t-[2rem]">
+            <div>
+              <h2 className="text-xl font-black text-white tracking-wide">Checkout</h2>
+              <p className="text-xs text-slate-400 mt-1">Selesaikan pesanan Anda</p>
             </div>
-
-            {/* INPUT DATA DIR */}
-            <div className="space-y-4 mb-8">
-              <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">NAMA PENERIMA</label>
-                <input type="text" value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Contoh: Satrio" className="w-full bg-[#020617] border border-slate-800 p-4 rounded-xl text-white font-bold outline-none focus:border-blue-500 transition-all" />
-              </div>
-              <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">NOMOR WHATSAPP</label>
-                <input type="number" value={wa} onChange={(e) => setWa(e.target.value)} placeholder="08..." className="w-full bg-[#020617] border border-slate-800 p-4 rounded-xl text-white font-bold outline-none focus:border-blue-500 transition-all" />
-              </div>
-            </div>
-
-            {/* AREA PERINGATAN PENGIRIMAN (Menggantikan COD view) */}
-            <div className="mt-auto flex flex-col items-center justify-center bg-[#020617] rounded-2xl border border-slate-800 p-6 text-center animate-in zoom-in-95 duration-300">
-              <span className="text-6xl mb-4 block opacity-80">🚚</span>
-              <h3 className="text-lg font-black text-white mb-2 uppercase">Mohon maaf, jangkauan pengiriman kami saat ini hanya mencakup alamat provinsi Riau Kab.Pelalawan Kec.Kerumutan.</h3>
-              <p className="text-slate-500 text-xs leading-relaxed">Terima kasih atas pengertiannya.</p>
-            </div>
-          </div>
-
-          {/* KOLOM KANAN: Ringkasan Pesanan & Tombol Pesan */}
-          <div className="flex-1 p-6 md:p-10 flex flex-col overflow-y-auto hide-scroll bg-[#020617]">
-            <div className="mb-6 pt-2 md:pt-0">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">RINGKASAN PESANAN</label>
-            </div>
-
-            {/* KARTU PESANAN (Elegansi Dark Blue) */}
-            <div className="bg-gradient-to-br from-blue-900/40 to-slate-900 p-6 rounded-2xl text-white shadow-lg border border-blue-500/20 mb-8 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-              
-              <div className="flex justify-between items-start mb-6 relative z-10">
-                <div>
-                  <p className="text-[10px] uppercase font-black text-blue-400 mb-1 tracking-widest">PESANANMU:</p>
-                  <h3 className="text-2xl font-black leading-tight mb-2 text-white">{produk.nama}</h3>
-                  <span className="bg-blue-500/20 text-blue-300 border border-blue-500/30 px-3 py-1 rounded-md text-xs font-bold">
-                    {produk.kategori || "Biasa"}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] uppercase font-black text-slate-400 mb-1 tracking-widest">TOTAL BAYAR</p>
-                  <p className="text-2xl font-black mb-1 text-white">Rp {totalHarga.toLocaleString("id-ID")}</p>
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center pt-4 border-t border-slate-700/50 relative z-10">
-                <span className="font-black text-sm uppercase tracking-widest text-slate-300">JUMLAH BELI:</span>
-                <div className="flex items-center gap-4 bg-slate-950/50 px-3 py-2 rounded-full border border-slate-800">
-                  <button onClick={() => setJumlah(Math.max(1, jumlah - 1))} className="w-7 h-7 flex items-center justify-center bg-slate-800 text-white rounded-full font-black text-lg hover:bg-blue-600 transition-colors">-</button>
-                  <span className="font-black text-lg w-4 text-center">{jumlah}</span>
-                  <button onClick={() => setJumlah(jumlah + 1)} className="w-7 h-7 flex items-center justify-center bg-blue-600 text-white rounded-full font-black text-lg hover:bg-blue-500 transition-colors">+</button>
-                </div>
-              </div>
-            </div>
-
-            {/* TOMBOL PESAN */}
-            <button 
-              onClick={handlePesan} 
-              className="w-full mt-auto py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20 active:scale-95"
-            >
-              Kirim Pesanan Ke WhatsApp →
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors">
+              ✕
             </button>
           </div>
+
+          {/* BODY SCROLLABLE */}
+          <div className="p-6 overflow-y-auto hide-scroll space-y-8 flex-grow">
+            
+            {/* 1. RINGKASAN PRODUK (Clean Card) */}
+            <div className="flex items-center justify-between bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+              <div>
+                <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest bg-blue-500/10 px-2 py-1 rounded-md mb-2 inline-block">
+                  {produk.kategori || "Biasa"}
+                </span>
+                <h3 className="text-lg font-bold text-white">{produk.nama}</h3>
+                <p className="text-sm text-slate-400 mt-1">Rp {produk.harga.toLocaleString("id-ID")}</p>
+              </div>
+              
+              {/* Counter Jumlah */}
+              <div className="flex items-center gap-3 bg-[#0B1120] border border-slate-800 p-1.5 rounded-xl">
+                <button onClick={() => setJumlah(Math.max(1, jumlah - 1))} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg font-bold transition">-</button>
+                <span className="font-black text-white w-4 text-center">{jumlah}</span>
+                <button onClick={() => setJumlah(jumlah + 1)} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg font-bold transition">+</button>
+              </div>
+            </div>
+
+            {/* 2. FORM DATA DIRI */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-white border-l-2 border-blue-500 pl-3">Informasi Pengiriman</h4>
+              
+              <div className="space-y-3">
+                <input type="text" value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Nama Penerima" className="w-full bg-[#0B1120] border border-slate-800 px-4 py-3.5 rounded-xl text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" />
+                <input type="number" value={wa} onChange={(e) => setWa(e.target.value)} placeholder="Nomor WhatsApp" className="w-full bg-[#0B1120] border border-slate-800 px-4 py-3.5 rounded-xl text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" />
+                <textarea value={alamat} onChange={(e) => setAlamat(e.target.value)} placeholder="Alamat Lengkap (Jalan, RT/RW, Desa)" className="w-full bg-[#0B1120] border border-slate-800 px-4 py-3.5 rounded-xl text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all h-24 resize-none"></textarea>
+              </div>
+            </div>
+
+            {/* 3. METODE PEMBAYARAN (Gaya Toggle iOS) */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-white border-l-2 border-blue-500 pl-3">Metode Pembayaran</h4>
+              
+              <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+                <button onClick={() => setMetodeBayar("Bayar di Tempat")} className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${metodeBayar === "Bayar di Tempat" ? "bg-blue-600 text-white shadow-md" : "text-slate-400 hover:text-slate-200"}`}>
+                  💵 COD / Bayar di Tempat
+                </button>
+                <button onClick={() => setMetodeBayar("E-Wallet / QRIS")} className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${metodeBayar === "E-Wallet / QRIS" ? "bg-blue-600 text-white shadow-md" : "text-slate-400 hover:text-slate-200"}`}>
+                  📱 E-Wallet / QRIS
+                </button>
+              </div>
+
+              {/* AREA DINAMIS PEMBAYARAN */}
+              <div className="mt-4">
+                {metodeBayar === "Bayar di Tempat" ? (
+                  // BANNERS COD (Elegan, tidak pakai kotak besar)
+                  <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl flex gap-4 items-start">
+                    <span className="text-2xl mt-1">🚚</span>
+                    <div>
+                      <h5 className="text-yellow-500 font-bold text-xs uppercase tracking-wider mb-1">Ketentuan Pengiriman COD</h5>
+                      <p className="text-slate-300 text-xs leading-relaxed">
+                        Mohon maaf, jangkauan pengiriman kami saat ini <strong className="text-white">hanya mencakup wilayah Provinsi Riau, Kab. Pelalawan, Kec. Kerumutan.</strong> Terima kasih atas pengertiannya.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  // BANNERS QRIS (Clean White Card)
+                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col items-center text-center">
+                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-4">Scan QRIS BIHIN NISAN</p>
+                    <div className="bg-white p-3 rounded-xl mb-6">
+                      <img src="https://zjqtknrztqrevjnttkgh.supabase.co/storage/v1/object/public/foto-produk/WhatsApp%20Image%202026-03-29%20at%2020.50.11.jpeg" alt="QRIS" className="w-40 h-auto object-contain" />
+                    </div>
+                    <label className="flex items-start gap-3 bg-[#0B1120] p-4 rounded-xl border border-slate-800 cursor-pointer text-left w-full">
+                      <input type="checkbox" checked={sudahBayar} onChange={(e) => setSudahBayar(e.target.checked)} className="w-5 h-5 rounded border-slate-600 accent-blue-600 mt-0.5" />
+                      <span className="text-xs text-slate-300 leading-relaxed">Saya telah memindai QRIS dan berhasil melakukan transfer sesuai total tagihan.</span>
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          {/* FOOTER FIXED: Tombol Aksi */}
+          <div className="p-4 md:p-6 border-t border-slate-800/50 bg-slate-900/50 shrink-0 flex items-center justify-between gap-4 md:rounded-b-[2rem]">
+            <div className="hidden md:block">
+              <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Total Tagihan</p>
+              <p className="text-xl font-black text-white">Rp {totalHarga.toLocaleString("id-ID")}</p>
+            </div>
+            
+            <button 
+              onClick={handlePesan} 
+              className={`flex-1 md:flex-none w-full md:w-auto px-6 py-4 rounded-xl font-bold text-sm uppercase tracking-wide transition-all ${
+                metodeBayar === "E-Wallet / QRIS" && !sudahBayar 
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20 active:scale-95'
+              }`}
+            >
+              {metodeBayar === "Bayar di Tempat" ? "BUAT PESANAN SEKARANG" : "KIRIM BUKTI KE WA"}
+            </button>
+          </div>
+
         </div>
       </div>
     </>
