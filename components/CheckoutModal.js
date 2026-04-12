@@ -36,6 +36,7 @@ export default function CheckoutModal({ produk, onClose }) {
 
       // TANDA PEMBELI: Simpan tanda kalau dia udah beli (Untuk memunculkan menu Lacak)
       localStorage.setItem("is_pembeli", "true");
+      localStorage.setItem("user_wa", wa);
 
       alert("Berhasil! Pesanan COD Anda telah masuk ke sistem kami. Admin akan segera memprosesnya.");
       onClose();
